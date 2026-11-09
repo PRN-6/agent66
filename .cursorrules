@@ -1,0 +1,13 @@
+# Cursor AI Project Rules for Agent66
+
+You are assisting on Agent66, a stylized low-poly medieval kingdom open world RPG built with Three.js and Vite.
+
+## Invariant Rules
+1. **Setting**: Strictly Old-Era Medieval Fantasy (castle, cobblestone roads, timber/thatched houses, forge, tavern, warhorse mount, knights, wagons). NO modern skyscrapers, cars, or asphalt.
+2. **Collision**: All buildings, walls, and obstacles MUST register colliders in `this.colliders` and be resolved using continuous sub-stepped collision (`src/utils/collision.js`). Never allow characters to clip or pass through walls.
+3. **6 Main Characters**: Aiden (Hero), Princess Aurelia, Malakor (Demon King), Kage (OP Side Character), King Reginald, Master Vance (Retired Hero). Maintain both playable switching and interactive NPC dialogue.
+4. **Pure ES Modules**: Maintain clean, vanilla Three.js architecture with zero unnecessary external frameworks.
+5. **Always test builds**: Run `npm run build` after changes to ensure clean builds.
+
+See `AGENTS.md` and `docs/` for complete architectural details and prioritized roadmap.
+
