@@ -5,8 +5,9 @@ import { getTerrainHeight } from '../utils/math.js';
 import { resolveCircleCollision } from '../utils/collision.js';
 
 export class SkillSystem {
-  constructor(scene) {
+  constructor(scene, gameApp = null) {
     this.scene = scene;
+    this.gameApp = gameApp;
 
     // Player Skill Progression State
     this.skillPoints = 3; // Starts with 3 SP to unlock and experiment with magic immediately!
@@ -176,6 +177,27 @@ export class SkillSystem {
 
     // Apply AoE / Range damage to monsters
     const result = monsterManager.playerSpellAttack(skill, spellOrigin, forwardVector);
+
+    // Also check for damage against Apex Dragons in the vicinity
+    if (this.gameApp && this.gameApp.mythicalDragonSystem) {
+      const dragons = this.gameApp.mythicalDragonSystem.creatures || [];
+      for (let d of dragons) {
+        if (!d.isDead && d.group && !d.isTamed) {
+          const dx = d.group.position.x - spellOrigin.x;
+          const dz = d.group.position.z - spellOrigin.z;
+          const dist = Math.hypot(dx, dz);
+          if (dist <= skill.radius + 3.5) {
+            const dragonDmg = Math.floor(skill.damage * (1.15 + Math.random() * 0.25));
+            d.currentHp = Math.max(0, d.currentHp - dragonDmg);
+            d.updateHpBar(d.currentHp, d.maxHp, d.level);
+            combatSystem.spawnFloatingText(d.group.position, `💥 -${dragonDmg}`, skill.color || '#ef4444', true);
+            if (d.currentHp <= 0) {
+              this.gameApp.mythicalDragonSystem.killDragon(d);
+            }
+          }
+        }
+      }
+    }
 
     // Banner Floating Text for Caster
     combatSystem.spawnFloatingText(

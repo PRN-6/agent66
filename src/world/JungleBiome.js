@@ -33,8 +33,7 @@ export class JungleBiome {
     canopyGeom.translate(0, 8.5, 0);
     const canopyMat = new THREE.MeshLambertMaterial({
       color: 0x1b4332,
-      flatShading: true,
-      roughness: 0.8
+      flatShading: true
     });
     const canopyInst = new THREE.InstancedMesh(canopyGeom, canopyMat, treeCount);
     canopyInst.castShadow = true;

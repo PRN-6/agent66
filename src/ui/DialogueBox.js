@@ -1,8 +1,11 @@
 import { RACES } from '../config/constants.js';
 
 export class DialogueBox {
-  constructor(onSwitchCharacter) {
+  constructor(onSwitchCharacter, onInspectMind = null, onOpenPipTasks = null, onOpenElvenTasks = null) {
     this.onSwitchCharacter = onSwitchCharacter;
+    this.onInspectMind = onInspectMind;
+    this.onOpenPipTasks = onOpenPipTasks;
+    this.onOpenElvenTasks = onOpenElvenTasks;
     this.currentCharacter = null;
     this.dialogueIndex = 0;
     this.isOpen = false;
@@ -39,7 +42,9 @@ export class DialogueBox {
           </div>
         </div>
         <div class="dialogue-footer">
+          <button class="btn-dlg-action btn-pip-task" id="dlgPipTaskBtn" style="display: none; background: linear-gradient(135deg, #f59e0b, #d97706); color: #1c1917; font-weight: 800;">📜 Pip's Tasks</button>
           <button class="btn-dlg-action btn-next-line" id="dlgNextBtn">Next Line 💬</button>
+          <button class="btn-dlg-action btn-inspect-mind" id="dlgInspectMindBtn" style="background: rgba(168, 85, 247, 0.25); border: 1px solid rgba(168, 85, 247, 0.5); color: #f3e8ff;">Inspect Mind 🧠</button>
           <button class="btn-dlg-action btn-switch-char" id="dlgSwitchBtn">Play as this Character ⚡</button>
         </div>
       </div>
@@ -53,6 +58,24 @@ export class DialogueBox {
 
     this.container.querySelector('#dlgNextBtn').addEventListener('click', () => {
       this.showNextLine();
+    });
+
+    this.container.querySelector('#dlgPipTaskBtn').addEventListener('click', () => {
+      if (this.currentCharacter?.id === 'villager_pip' && this.onOpenPipTasks) {
+        this.close();
+        this.onOpenPipTasks();
+      } else if (this.onOpenElvenTasks) {
+        this.close();
+        this.onOpenElvenTasks();
+      }
+    });
+
+    this.container.querySelector('#dlgInspectMindBtn').addEventListener('click', () => {
+      if (this.currentCharacter && this.onInspectMind) {
+        const char = this.currentCharacter;
+        this.close();
+        this.onInspectMind(char);
+      }
     });
 
     this.container.querySelector('#dlgSwitchBtn').addEventListener('click', () => {
@@ -108,6 +131,36 @@ export class DialogueBox {
     }
 
     lifespanEl.textContent = `⏳ Span: ${character.lifespan || raceInfo.lifespan}`;
+
+    // Quest Task Button (Young Pip or Alchemist Lunara)
+    const taskBtn = this.container.querySelector('#dlgPipTaskBtn');
+    if (character.id === 'villager_pip') {
+      taskBtn.style.display = 'inline-block';
+      const taskSystem = window.__pipTaskSystem;
+      if (taskSystem && taskSystem.taskStatus === 'READY_TO_CLAIM') {
+        taskBtn.textContent = '🎁 Turn In Task (Claim XP!)';
+        taskBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+        taskBtn.style.color = '#ffffff';
+      } else {
+        taskBtn.textContent = "📜 Young Pip's Tasks";
+        taskBtn.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+        taskBtn.style.color = '#1c1917';
+      }
+    } else if (character.id === 'villager_lunara' || character.id === 'elf_high_priestess') {
+      taskBtn.style.display = 'inline-block';
+      const elvenSystem = window.__elvenTaskSystem;
+      if (elvenSystem && elvenSystem.taskStatus === 'READY_TO_CLAIM') {
+        taskBtn.textContent = '🌟 Turn In Trial (Claim XP!)';
+        taskBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+        taskBtn.style.color = '#ffffff';
+      } else {
+        taskBtn.textContent = "🌿 Lunara's Starlight Trials";
+        taskBtn.style.background = 'linear-gradient(135deg, #0284c7, #06b6d4)';
+        taskBtn.style.color = '#ffffff';
+      }
+    } else {
+      taskBtn.style.display = 'none';
+    }
 
     const switchBtn = this.container.querySelector('#dlgSwitchBtn');
     if (character.isPlayable === false) {

@@ -33,9 +33,42 @@
 - [x] **Grand Authentic Castle Overhauls**:
   - Human Kingdom Royal Castle Citadel: 140m × 12m defensive moat, arched drawbridge, twin 28m barbican gate towers, 4 corner bastions (34m), outer bailey garrison armory, sparring racks, warhorse stables, 4 king statues, and the Great Royal Donjon with open enterable Grand Throne Hall, velvet red carpet, banquet feast tables, and King Reginald's Sovereign Throne Dais (`[380, -375]`).
   - Demon Realm Obsidian Dread Citadel: expanded 96m × 90m volcanic stronghold with boiling magma moat, volcanic drawbridge, twin 32m demon skull barbican gatehouses, 38m corner bastions with 14m demon horns, outer bailey sulfur cauldrons, 54m Abyssal Keep with rotating Nether Blood Eye, and Demon King Malakor's Throne of Skulls (`[-220, -220]`).
+- [x] **High Valoria Castle Town (`CastleTown.js` at `[370, -250]`)**:
+  - Magnificent capital high town situated directly outside the Royal Castle drawbridge:
+  - 3-tier Marble Lion Fountain with cascading water spray and radial mosaic plaza.
+  - 28m Grand Clocktower with rotating clock hands, open belfry, and swinging bronze bell.
+  - Civic & guild buildings: Royal Bank & Vault, High Alchemist's Spire & Conservatory with pulsing mana orbs, Silver Stag Coaching Inn & Winery with dining patio, Master Armourer & Royal Smithy with blazing forge, Court Library & Cartography House with celestial sphere balcony, Royal Patisserie & Bakery.
+  - 4 luxury patrician merchant villas with flowerboxes, dormers, and stone chimneys.
+  - 4 boutique artisan kiosks (Royal Florist, Silks & Tapestries, Goldsmith & Jewelers, Rare Spices).
+  - Sunken Rose Garden botanical sanctuary with marble balustrades, white gazebo, sundial, and 4 blossoming cherry trees.
+  - South Gatehouse fortifications with twin watchtowers and golden lion banner.
+  - 6 new living high-society citizens: Lord Brandon, Lady Genevieve, Master Corvus, Alchemist Zephyr, Helena the Florist, Town Crier Silas.
 - [x] **13 Inhabited Settlement Sanctuaries & Wild Monster Exclusion (`SANCTUARY_ZONES`)**:
   - All 13 populated settlements, towns, villages, markets, castles, foundries, and hamlets are registered sanctuary zones.
   - Wild monsters physically barred from entering populated areas via ward boundary barriers (`⛔ WARD BARRIER`), loss of aggro against targets inside sanctuaries, sanctuary-free wander paths, and continuous depenetration safeguards.
+- [x] **Dynamic Weather & Atmospheric Precipitation (`WeatherSystem.js`)**:
+  - 4 dynamic weather atmospheres (`CLEAR`, `RAIN`, `SNOW`, `ASH`) with GPU particle precipitation, procedural Web Audio thunder, and territory auto-switching.
+- [x] **Skyrim-Style RPG Dynamic Cardinal Compass (`RPGCompass.js`)**:
+  - 360° rotating azimuth tape tracking camera yaw with cardinal headings (N, NE, E, SE, S, SW, W, NW), landmark icons, and real-time distance pills.
+- [x] **UI Visual Overhaul & Dropdown Time/Atmosphere Architecture**:
+  - Replaced cluttered inline 8-button emoji strips with a sleek, glassmorphic dropdown pill (`🕒 11:30 AM • ☀️ Clear ▾`) opening an elegant popover palette for time presets (Dawn, Noon, Dusk, Midnight) and atmospheric precipitation (Clear Sky, Tempest Rain, Snow Flurry, Nether Ash).
+  - Cleaned up top-right toolbar: removed awkward two-line text wrapping, added uniform glassmorphic pill buttons with glowing status dots (`🤖 Auto: ON [P]`, `🧠 Mind [K]`), circular icons (`⏳`, `🔊`, `❓`), and the celestial `👁️ God's Roam` button.
+  - Overhauled Playable Character Roster: replaced wide horizontal text buttons with royal heraldic crest medallions with character badges, colored faction rings, breathing active pulse, and detailed hover tooltips.
+- [x] **God's Roam Mode (Divine Spectator Focus)**:
+  - Implemented Divine Spectator Focus mode across `CameraManager.js`, `HUD.js`, and `main.js`.
+  - As Creator of the World, the user can smoothly spectate and follow any individual character (the 6 main heroes or realm citizens like Young Pip, Alchemist Lunara, Engineer Brandon, Captain Donald) from above in real-time as they live autonomously.
+  - Floating celestial glass banner at top center displays citizen avatar, royal title, homeland, and live action stream.
+  - Smooth keyboard navigation: `[` (Prev Citizen), `]` (Next Citizen), `Enter` (Possess Body), `K` (Inspect Mind), `Esc` (Return to Hero).
+  - Clicking any hero medallion while in God's Roam instantly glides the divine eye to them!
+- [x] **Mythical World Boss Dragons & Village/Crossroads Raids (`MythicalDragonSystem.js`)**:
+  - Implemented 3 Apex Mythical Boss Beasts with custom procedural 3D models:
+    1. **🐲 Ignis the Ancient Fire Dragon** (Lv. 8 Boss, 1200 HP): Colossal quadrupedal red dragon with molten dorsal plates, horned crest, and conical fire breath. Raids Central Crossroads Bridge & Oakhaven Village!
+    2. **❄️ Glacius the Frost Wyrm** (Lv. 7 Boss, 950 HP): Crystalline ice wyrm with diamond scales, translucent frost horns, and freezing ice breath. Raids High Valoria Gates & Fernbrook Hamlet!
+    3. **🦁 Chimera the Abyssal Manticore** (Lv. 7 Boss, 880 HP): Three-headed mythical beast with golden lion body, ram horns, dragon bat wings, and venomous scorpion stinger tail. Raids Town Market Bazaar & Crossroads!
+  - **Dynamic Aerial Raid AI**: Soars high in the sky ($Y = 24 - 34\text{m}$) flapping articulated wings, lets out a synthesized draconic roar, swoops down across the 1600m continent, and assaults villages / main crossroads area with fire, frost, and venom particles!
+  - **Sanctuary Raid Exemption**: Unlike standard forest beasts, Mythical Boss Dragons bypass ordinary ground ward barriers to directly assault settlements.
+  - **Interactive Summon & Controls**: Trigger raids at will using the **`[B]`** key, clicking the **`🐉 Summon Mythical Dragon Raid!`** button inside the top time/atmosphere popover, or via natural periodic world calamities.
+  - **Boss HUD Bar & Alerts**: Real-time Boss health bar with active raid status, screen-flash raid alert banner, knight retaliation, and single-pet taming (`[G]`) when wounded!
 - [x] **Surface-Adaptive Audio & Hoofbeats**:
   - Procedural Web Audio footstep detection (wooden planks, stone cobblestones, pasture grass) and dual-strike horse hoof clatter.
 
@@ -44,116 +77,145 @@
 ## 🧭 PHASE 1: Environment & Sensory/Actuator Infrastructure (World Readiness for AI Agents)
 *Goal: Build the digital nervous system and action APIs that allow an AI Mind to perceive and manipulate the Three.js world.*
 
-### 1.1 World Perception Engine (`src/ai/WorldPerceptionEngine.js`)
-- [ ] **Spatial & Biome Awareness**:
-  - Function `getAgentSensorySnapshot(agentId)` returning:
-    - Current $(X, Y, Z)$ coordinates, nearest landmark, current territory/biome, distance to nearest Imperial Road.
-    - Indoors vs. outdoors status (identifies which Open House the agent is inside).
-- [ ] **Sensory Radar (Vision & Proximity)**:
-  - Query all entities within $25\text{m}$ sensory cone:
-    - Nearby characters/NPCs (name, race, distance, current state).
-    - Nearby monsters/threats (species, level, aggression).
-    - Nearby interactables (market stalls, taverns, campfires, crops, doors).
-    - Player/Creator presence and proximity.
-- [ ] **Temporal & Atmospheric Context**:
-  - Day/Night state (Time formatted e.g., "02:30 PM", solar phase: sunrise, noon, sunset, midnight).
-  - Ambient illumination level and weather/fog density.
-- [ ] **Social Snapshot**:
-  - Active conversation status, recent utterances in the immediate vicinity, and active faction tensions.
+### 1.1 World Perception Engine (`src/ai/WorldPerceptionEngine.js`) - ✅ COMPLETED
+- [x] **Spatial & Biome Awareness**:
+  - `getSensorySnapshot(npc)` returning:
+    - Current $(X, Y, Z)$ coordinates, nearest landmark, current territory/biome, sanctuary ward zone status (`SANCTUARY_ZONES`).
+- [x] **Sensory Radar (Vision & Proximity Cone)**:
+  - Queries all entities within $32\text{m}$ perception cone:
+    - Nearby characters/NPCs (name, race, distance, faction).
+    - Nearby monsters/threats (species, level, distance).
+    - Player/Creator presence and proximity (`isCreatorNearby`).
+- [x] **Temporal & Atmospheric Context**:
+  - Day/Night state (Time formatted e.g., "11:30 AM", solar phase: sunrise, noon, sunset, midnight).
+- [x] **Canonical Race & Anthropology Context**:
+  - Automatically binds race lifespan (Demons 10,000+ yrs, Elves 3,000 yrs, Dwarves 500 yrs, Humans 80 yrs), aging speed, and cultural animosity/disposition into sensory snapshot.
 
-### 1.2 World Action Execution Engine (`src/ai/WorldActionExecutor.js`)
-- [ ] **Action 1: Spatial Navigation (`MOVE_TO`)**:
-  - Navigates agent to target $(X, Z)$ along the Imperial Road network and waypoint nodes.
-  - Integrates collision depenetration and smooth character walking/running limb animations.
-- [ ] **Action 2: Speech & Thought Projection (`SPEAK` / `THINK`)**:
-  - Generates floating low-poly comic speech bubbles with racial font styling above character 3D heads.
-  - Appends spoken dialogue to the global event log and triggers audio blips.
-- [ ] **Action 3: Physical Gestures & Emotes (`EMOTE`)**:
-  - Triggers procedural body animations: Bow, Threaten/Roar, Laugh, Pray, Wave, Cross Arms.
-- [ ] **Action 4: World Interaction (`INTERACT`)**:
-  - Drink ale at The Dragon's Rest Tavern, warm hands at campfire, till crops in Oakhaven, inspect forge anvil.
-- [ ] **Action 5: Autonomous Construction (`TRIGGER_BUILD`)**:
-  - Bridges the agent's decision directly to `NPCTownBuilder.js` to begin constructing a new race structure.
-- [ ] **Action 6: Combat & Defense (`ENGAGE` / `FLEE`)**:
-  - Casts racial spells via `SkillSystem.js` or swings weapon via `CombatSystem.js` when threatened.
+### 1.2 Multi-Backend Brain Adapter (`src/ai/GroqBrainAdapter.js`) - ✅ COMPLETED
+- [x] **Groq Cloud LLM Integration**:
+  - OpenAI-compatible endpoint `https://api.groq.com/openai/v1/chat/completions` with JSON schema output (`response_format: { type: "json_object" }`).
+  - Model options: `llama-3.3-70b-versatile`, `llama-3.1-8b-instant`, `mixtral-8x7b-32768`.
+  - Built-in latency ping and speed test reporting tokens/sec.
+- [x] **Zero-Latency Heuristic Fallback**:
+  - Rich procedural thought generator immediately active when offline or without API key, generating contextual observation, inner monologue, mood, and intentions.
 
-### 1.3 The Creator's Interface: Mind Inspector & Divine Decree (`src/ui/CreatorHUD.js`)
-- [ ] **"Creator's Eye" Inspection Modal (`[C]` or HUD Button)**:
-  - Clicking on any character opens the **Mind Inspector**:
-    - **Current Thought Stream**: Real-time inner monologue of what the character is pondering.
-    - **Active Goal**: What they are trying to achieve right now.
-    - **Emotional Vitals**: Loyalty, Anger, Fear, Racial Pride, Fatigue (0–100%).
-    - **Episodic Memory Log**: Last 5 events/interactions stored in their consciousness.
-- [ ] **Divine Decree / Whispering Console**:
-  - As The Creator, the user can type a divine thought directly into any character's mind (e.g., *"Aiden, seek the ancient obelisk"* or *"Malakor, hold your fury"*).
-  - The character's LLM processes the Divine Message as a sacred or terrifying revelation and adapts its behavior.
+### 1.3 The Creator's Interface: Mind Inspector & Divine Decree (`src/ui/CreatorDashboard.js`) - ✅ COMPLETED
+- [x] **"The Creator's Eye" Inspection Modal (`[K]` or HUD Button)**:
+  - **Direct 3D Click-to-Inspect**: Left-clicking any character/NPC directly in the 3D scene opens their mind in the dashboard.
+  - **Citizen Directory**: Realm directory with faction tabs (`All`, `⭐ Main 6`, `👑 Valoria`, `🌿 Elves`, `⚒️ Dwarves`, `🔥 Demons`), distance to player, and search.
+  - **Live 3D Telemetry Matrix**: Coordinates, landmark, sanctuary status, time, creator distance, nearby entities.
+  - **Active Consciousness Stream**: Formatted inner thought bubble, observation, mood/feeling, intention, and spoken words.
+  - **⚡ Think Now Action**: Immediate cognitive generation on demand.
+  - **🎥 View in World**: Focuses Free Look camera directly onto character.
+- [x] **Divine Decree / Whispering Console**:
+  - The Creator types divine thoughts directly into any character's mind with quick decree chips.
+  - Characters process the decree in their next thought stream, accompanied by a glowing 3D billboard over their head in the world.
 
 ---
 
-## 🧠 PHASE 2: Individual AI Mind Architecture (Cognitive Agent Framework)
+## 🧠 PHASE 2: Individual AI Mind Architecture (Cognitive Agent Framework) - ✅ COMPLETED
 *Goal: Create the cognitive framework that powers each character's autonomous reasoning, memory, and personality.*
 
-### 2.1 Persona & System Prompt Templates (`src/ai/AgentPersonas.js`)
-- [ ] **Canonical Race & Lifespan Grounding**:
-  - Strict grounding in canonical lifespans and racial anthropology:
+### 2.1 Reusable Cognitive Framework (`src/ai/NPCBrain.js`) - ✅ COMPLETED
+- [x] **Canonical Race & Lifespan Grounding**:
+  - Grounding in canonical lifespans and racial anthropology:
     - **Demons**: Ageless/Eternal ($10,000+$ years), universal contempt for mortal kindling, relentless void will.
     - **Elves**: $1,500 - 3,000+$ years, haughty celestial nobility, disdain for crude human haste and dwarven soot.
     - **Dwarves**: $350 - 500$ years, stone-forged brotherhood, pragmatic machine technology, pride in gears and ore.
     - **Humans**: $75 - 100$ years, mortal baseline, resourcefulness, adaptable ambition, urgency.
-- [ ] **Persona Schemas for the 6 Main Characters**:
-  - Aiden, Princess Aurelia, Demon King Malakor, Kage, King Reginald, Master Vance.
+- [x] **Episodic Memory Stream (`recordMemory`)**:
+  - Bounded working memory log preserving highest importance memories ($1 - 10$):
+    - Divine decrees from the Creator (Importance: 10).
+    - Near-death or monster sightings (Importance: 8).
+    - Settlement construction and trades (Importance: 7–8).
+    - Ambient daily occurrences and observations (Importance: 3–5).
+  - Formats summary for LLM prompt context so NPCs remember past events and decrees.
+- [x] **Cognitive Level of Detail (LOD) & Population Scaling**:
+  - **Tier 1 (Ambient Utility Routine)**: Zero LLM cost, runs at 60 FPS for hundreds of ordinary villagers/guards.
+  - **Tier 2 (Important Agents / Main 6)**: Event-driven periodic reflections and high-level goal evaluations.
+  - **Tier 3 (In-Focus Live Consciousness)**: Real-time LLM reasoning when inspected by Creator or engaged in dialogue.
+- [x] **Game Action Actuator (`dispatchAction`)**:
+  - Translates high-level LLM intentions into engine actuators:
+    - `WALK_TO`: resolves destination coordinates via landmarks/sanctuaries, paths along roads, resolves collisions.
+    - `WORK_AT`: paths to workplace (forge, farm, stall, throne) and plays work animation.
+    - `TALK_TO`: turns towards target, plays conversational gesture, spawns 3D speech bubble.
+    - `BUILD`: triggers settlement expansion in `NPCTownBuilder`!
+    - `FIGHT`: faces monster threats and adopts combat ready stance.
+    - `REST_AT`: paths to tavern or lodge.
+    - `TRADE_WITH`: approaches merchant stall and plays commerce gesture.
 
-### 2.2 Memory Stream & Reflection Engine (`src/ai/AgentMemory.js`)
-- [ ] **Short-Term Working Memory**:
-  - Circular buffer of the last 10 sensory events (sightings, heard dialogue, received damage).
-- [ ] **Long-Term Episodic Memory**:
-  - Stores key historical events with an **Importance Score** ($1 - 10$):
-    - Interactions with the Creator (Importance: 10).
-    - Near-death experiences or monster attacks (Importance: 8).
-    - Friendship pacts or racial arguments (Importance: 6).
-- [ ] **Periodic Reflection Cycle**:
-  - Agent synthesizes recent memories into high-level beliefs (e.g., *"I have realized the dwarves at Karak-Vorn are honorable smiths despite their gruff exterior"*).
+### 2.2 Dual-Backend Cognitive Brain Adapter (`src/ai/GroqBrainAdapter.js`) - ✅ COMPLETED
+- [x] **Groq Cloud LLM Integration**:
+  - Ultra-fast cloud completions (~500+ tok/s) with `llama-3.3-70b-versatile`, `llama-3.1-8b-instant`, `mixtral-8x7b-32768`.
+- [x] **Local Ollama Integration (Zero-CORS via Vite Proxy)**:
+  - Private & offline local LLM execution supporting `qwen2.5:7b-instruct`, `qwen2.5-coder:7b`, `llama3.1:8b`.
+  - Vite dev server proxy `/ollama` forwarding to `http://localhost:11434` to eliminate browser CORS blocks.
+  - Automatic model auto-detection via `/api/tags` and latency ping test.
+- [x] **High-Fidelity Procedural Heuristic Fallback**:
+  - Instant zero-latency cognitive generation when offline or unconfigured.
 
-### 2.3 Pluggable Multi-Backend Brain Adapter (`src/ai/BrainAdapter.js`)
-- [ ] **Adapter 1: Free In-Browser Lightweight Model (WebLLM / Transformers.js)**:
-  - Runs directly inside the browser using WebGPU/Wasm (e.g. SmolLM-360M, Llama-3.2-1B, or Qwen2.5-0.5B).
-  - 100% private, free, and runs offline without API keys.
-- [ ] **Adapter 2: Cloud API Provider (Gemini 1.5 Flash / Flash Lite, OpenAI, Ollama)**:
-  - User can provide their own API key or localhost Ollama URL for ultra-high intelligence and deep roleplay.
-- [ ] **Adapter 3: Zero-Latency Heuristic "Micro-Mind" (Built-In Fallback)**:
-  - Rule-based cognitive simulation that guarantees all characters have rich, autonomous behaviors and thoughts even with zero setup or slow internet.
+### 2.3 The Creator's Eye & Mind Inspector (`src/ui/CreatorDashboard.js`) - ✅ COMPLETED
+- [x] **Dual-Backend Control Strip**:
+  - Tab switcher: `⚡ Groq Cloud` vs `🦙 Local Ollama`.
+  - Auto-detect local models button and latency benchmark.
+- [x] **Comprehensive Mind Inspector**:
+  - Active consciousness stream (mood, inner monologue, observation, planned action, intention, spoken dialogue).
+  - Episodic Memory Stream visual log with importance score stars.
+  - Real-Time Sensory Perception Matrix (location, landmark, sanctuary status, creator proximity, nearby entities).
+  - Skills & Aptitudes meter (Combat, Crafting, Diplomacy, Building).
+  - Direct Action Orders (`🚶 Crossroads`, `🏰 High Valoria`, `🔨 Build House`, `🍺 Tavern Rest`, `⚔️ Battle Stance`).
+- [x] **Dialogue Box Mind Shortcut**:
+  - "Inspect Mind 🧠" button inside RPG dialogue modal directly opens the selected NPC's consciousness.
 
 ---
 
-## 👑 PHASE 3: The 6 Main Characters' Autonomous Minds
-*Goal: Bring the 6 core legends of the realm to life with independent wills.*
+## 👑 PHASE 3: The 6 Main Characters' Autonomous Minds & Self-Movement - ✅ COMPLETED
+*Goal: Bring the 6 core legends of the realm to life with independent wills and hands-off autonomous self-movement.*
 
-- [ ] **1. Aiden (The Chosen Hero)**:
-  - *Goal*: Unify the fractured races, seek training from Master Vance, investigate demon activity at the river border.
-  - *Voice*: Idealistic, brave, respectful, driven by mortal duty.
-- [ ] **2. Princess Aurelia (Crown Princess of Valoria)**:
-  - *Goal*: Preserve peace, study elven starlight magic, maintain royal decorum, supervise Oakhaven farmlands.
-  - *Voice*: Elegant, diplomatic, observant, carrying hidden magical burdens.
-- [ ] **3. Demon King Malakor (The Shadow Monarch)**:
-  - *Goal*: Harvest Nether power from the Void Altar, command demon war parties, plot the eradication of the Human Citadel.
-  - *Voice*: Thundering, ominous, ancient, completely devoid of mortal pity.
-- [ ] **4. Kage (The OP Side Character)**:
-  - *Goal*: Wander between the shadows of the Town Market and the jungle, observe quietly, intervene only when catastrophe looms.
-  - *Voice*: Laconic, calm, mysterious, razor-sharp anime swordsman persona.
-- [ ] **5. King Reginald (High Sovereign)**:
-  - *Goal*: Fortify the Citadel walls, balance royal treasury and food granaries, negotiate with dwarven clans for weapons.
-  - *Voice*: Regal, weary, paternal, deeply protective of human survival.
-- [ ] **6. Master Vance (The Retired Hero)**:
-  - *Goal*: Enjoy rustic retirement at his foothills lodge, brew herbal tea, share combat wisdom at the tavern, sharpen his broadsword.
-  - *Voice*: Gruff, warm, nostalgic, battle-scarred veteran humor.
+- [x] **Autonomous AI Mind Mode (`[P]` or Top Bar Button)**:
+  - Toggle hands-off autonomous self-movement: the user does not need to touch any keys.
+  - **Sensory Perception**: Continuously feeds real-time 3D telemetry (location, landmarks, monsters, daytime, creator presence) through `WorldPerceptionEngine`.
+  - **Decision Engine**: `NPCBrain` (Groq LLM, Ollama, or Heuristic) plans high-level goals and intentions (`WALK_TO`, `FIGHT`, `WORK_AT`, `REST_AT`, `TRADE_WITH`, `BUILD`).
+  - **Engine Actuation**: Autonomous steering loop paths towards destinations, turns smoothly, resolves collisions, and executes 3-hit Magic Sword combos when monsters approach.
+  - **Live Consciousness Broadcast**: Floating 3D monologue text above the hero's head and HUD thought toasts (`🧠 AUTO MIND: <Character>`: `"<thought>"`).
+- [x] **Non-Player Main Heroes Autonomous Navigation (`NPCManager.js`)**:
+  - Distance-aware travel timers (`stateTimer = (dist / speed) + 8.0`) allow Aiden, Aurelia, Malakor, Kage, Reginald, and Vance to walk naturally across biomes and landmarks without getting tethered to their spawn or snapping.
+- [x] **Smooth Patrol Reversal in `Traffic.js`**:
+  - Replaced instantaneous boundary teleportation with continuous patrol direction reversal for guards and ox-carts.
 
 ---
 
 ## 🏘️ PHASE 4: Autonomous Realm NPCs & Living Social Dynamics
 *Goal: Populate the 4 realms with living communities that interact, debate, trade, and build together.*
 
-- [ ] **Autonomous Inter-NPC Conversations**:
-  - When two characters meet at the Crossroads, market well, or tavern, they greet each other and converse based on their racial dispositions.
+- [x] **Young Pip's Questline: "Path to Knighthood" (`src/systems/PipTaskSystem.js`)**:
+  - 4 progressive medieval RPG quests given by Young Pip in Oakhaven Farmlands (`x: 88, z: 32`):
+    1. *The Giant Pumpkin Harvest*: Gather 3 heavy Golden Harvest Pumpkins in the east furrow (+60 XP).
+    2. *The Secret Wooden Sword*: Retrieve Pip's hidden wooden sword from the riverside scarecrow (+100 XP).
+    3. *Scouting the Crossroads Bridge*: Travel to the Central Crossroads Sanctuary Obelisk to verify realm banners (+150 XP).
+    4. *Slay the Boundary Prowler*: Slay 1 wild forest monster outside the Oakhaven ward to secure the valley (+250 XP).
+  - 3D rotating quest markers above Pip's head (`❗` available, `❓` ready to claim, `⭐` completed).
+  - 3D interactive quest props in the world (glowing pumpkins with halos, embedded wooden broadsword with light beam).
+  - Real-time RPG Quest Tracker card on HUD + Quest interaction prompt `[E]`.
+  - Tied directly into Pip's `NPCBrain` episodic memory stream and cognitive reflections.
+  - Wooden sword equipped to Pip's 3D model upon questline completion!
+
+- [x] **Alchemist Lunara's Questline: "Starlight Trials of Sylvaheim" (`src/systems/ElvenTaskSystem.js`)**:
+  - 4 progressive celestial quests given by Alchemist Lunara in Sylvaheim Elven Glade (`x: -160, z: 98`):
+    1. *The Luminous Starlight Lotuses*: Gather 3 radiant floating Starlight Lotuses from the sacred mana pool (+100 XP).
+    2. *Communing with the Elder Trees*: Ascend the canopy suspension bridge to attune the Ancient Jade Font (+160 XP).
+    3. *Pilgrimage to the Moon Spire*: Stand beneath the levitating Celestial Moon Orb at the Moon Spire Sanctuary (+220 XP).
+    4. *Slay the Nether Blight Beast*: Purge corrupted shadow beasts lurking along the forest border (+350 XP).
+  - 3D rotating quest marker above Lunara's head (`❗` / `💬` / `❓` / `⭐`).
+  - Interactive 3D floating Starlight Lotuses with bobbing animation, point lights, and water ripple rings.
+  - Ancient Jade Font prop with floating glowing moonstone crystal.
+  - DialogueBox integration ("🌿 Lunara's Starlight Trials" action button) and HUD Quest Tracker card synchronization.
+
+- [x] **Autonomous Inter-NPC Conversations (`src/ai/SocialEncounterEngine.js`)**:
+  - Implemented architecture inspired by Stanford Generative Agents & AI Town (`a16z-infra/ai-town`).
+  - When two characters meet at the Crossroads, market well, tavern, or on the road, they face each other, pause movement, exchange voiced 3D speech bubbles, and record shared episodic memories into their `NPCBrain` memory streams with importance scoring.
+- [x] **Physics-Based Game AI Locomotion (`src/ai/YukaLocomotionEngine.js`)**:
+  - Powered by `yuka` (`Mugen87/yuka`). Smooth physics steering, deceleration ramps, continuous heading, and mutual separation behavior preventing clumping and teleportation.
 - [ ] **Goal-Driven Daily Schedules**:
   - Morning work $\to$ Afternoon trade/patrol $\to$ Evening tavern gatherings $\to$ Nighttime slumber inside Open Houses.
 - [ ] **Autonomous Expansion Triggers**:

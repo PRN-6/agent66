@@ -41,8 +41,9 @@ All waypoints are registered in `src/config/constants.js` and accessible via the
 | ID | Name | Territory | Coordinates $(X, Z)$ | Key Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `crossroads` | **Crossroads Sanctuary Bridge** | Central Hub | `(0, 10)` | Ancient stone bridge crossing the Great River; Warhorse Steed parked nearby |
-| `royal_citadel` | **Royal Castle Citadel** | Human Kingdom | `(200, -165)` | Colossal 120m×100m curtain fortress, King Reginald's Throne Room (Gate at `[200, -115]`) |
-| `princess_pavilion` | **Princess Aurelia’s Sun Pavilion** | Human Kingdom | `(310, -155)` | Graceful royal estate and gardens of Crown Princess Aurelia |
+| `royal_citadel` | **Royal Castle Citadel** | Human Kingdom | `(380, -380)` | Authentic medieval fortress with defensive moat, drawbridge, 4 corner bastions, King Reginald's Throne Hall (Gate at `[380, -325]`) |
+| `high_valoria_town` | **High Valoria Castle Town** | Human Kingdom | `(370, -250)` | Grand capital high town outside Citadel: 3-tier Marble Lion Fountain, 28m Clocktower, Royal Bank, Alchemist Spire, Silver Stag Inn, Smithy, Flower Market & Sunken Rose Garden |
+| `princess_pavilion` | **Princess Aurelia’s Sun Pavilion** | Human Kingdom | `(470, -370)` | Graceful royal estate and gardens of Crown Princess Aurelia |
 | `tavern` | **The Dragon's Rest Tavern** | Human Kingdom | `(205, -85)` | Enterable tavern with ale casks, hearth, banquet tables, and bounty board |
 | `demon_citadel` | **Obsidian Dread Fortress** | Demon Realm | `(-220, -220)` | Crowned in curved demon horns, obsidian battlements, and seat of Demon King Malakor |
 | `demon_altar` | **Void Sacrificial Altar** | Demon Realm | `(-270, -250)` | Stepped volcanic stone dais with a levitating purple Void Crystal |

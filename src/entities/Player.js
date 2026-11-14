@@ -1,9 +1,12 @@
 import * as THREE from 'three';
 import { getTerrainHeight, getDistToImperialRoad } from '../utils/math.js';
 import { audioSystem } from '../systems/AudioSystem.js';
-import { resolveCircleCollision } from '../utils/collision.js';
+import { resolveCircleCollision, checkCollision, resolveEntityCollision, ejectFromColliders } from '../utils/collision.js';
 import { CharacterFactory } from './CharacterFactory.js';
 import { getCharacterById } from '../config/characters.js';
+import { NPCBrain, BRAIN_TIERS } from '../ai/NPCBrain.js';
+import { isInSanctuaryZone } from '../config/constants.js';
+import { continentalNavGraph } from '../ai/ContinentalNavGraph.js';
 
 export class Player {
   constructor(scene, startPos = new THREE.Vector3(0, 0.5, 12)) {
@@ -14,9 +17,23 @@ export class Player {
     this.radius = 0.55; // Body collision radius
     this.characterId = 'hero';
 
+    // Autonomous AI Mind Mode (LLM Self-Driving & Decisions - Active by Default)
+    this.isAutonomous = true;
+    this.brain = null;
+    this.autonomousDecisionTimer = 0;
+    this.gameApp = null;
+
+    // Autonomous navigation & obstacle avoidance
+    this.stuckTimer = 0;
+    this.avoidanceDir = 1; // +1 = turn right, -1 = turn left
+    this.avoidanceHoldTimer = 0;
+    this.autoAttackCooldown = 0;
+
     // Movement speeds
-    this.walkSpeed = 12.0;
-    this.runSpeed = 22.0;
+    this.walkSpeed = 6.5;
+    this.runSpeed = 12.0;
+    this.speedMultiplier = 1.0;
+    this.isGodMode = false;
 
     // State
     this.isMoving = false;
@@ -31,6 +48,7 @@ export class Player {
     this.maxHp = 100;
     this.currentHp = 100;
     this.attackPower = 28;
+    this.gold = 100;
     this.attackAnimTimer = 0;
     this.attackAnimDuration = 0.35;
     this.comboStep = 1; // 1: Crescent, 2: Cross Arc, 3: Whirlwind Nova
@@ -55,6 +73,8 @@ export class Player {
 
   setCharacter(charId) {
     this.characterId = charId;
+    this.config = this.getCharacterConfig();
+    this.characterConfig = this.config;
 
     // Clear old model
     while (this.modelContainer.children.length > 0) {
@@ -68,6 +88,328 @@ export class Player {
 
     // Attach signature 3D Magic Sword to player's right hand
     this.attachMagicSword(charId);
+
+    // Re-initialize autonomous brain for new persona
+    this.initBrain();
+  }
+
+  setGameApp(gameApp) {
+    this.gameApp = gameApp;
+    this.initBrain();
+  }
+
+  initBrain() {
+    if (!this.gameApp) return;
+    const charConfig = this.getCharacterConfig();
+    this.brain = new NPCBrain(
+      { ...charConfig, isPlayer: true, isMain6: true, tier: BRAIN_TIERS.IN_FOCUS },
+      this.gameApp.groqAdapter,
+      this.gameApp.perceptionEngine
+    );
+    this.autonomousDecisionTimer = 0.5; // Short delay before first cognitive thought
+    this.pickNextAutonomousDestination();
+  }
+
+  pickNextAutonomousDestination() {
+    if (!this.brain) return;
+
+    // Check if character routine system provides a scheduled continental duty
+    if (this.gameApp?.routineSystem) {
+      const routineTask = this.gameApp.routineSystem.getCurrentTask(this.characterId);
+      if (routineTask) {
+        const y = getTerrainHeight(routineTask.x, routineTask.z);
+        this.brain.currentAction = {
+          type: 'WALK_TO',
+          target: routineTask.locationName,
+          targetPos: new THREE.Vector3(routineTask.x, y, routineTask.z),
+          taskData: routineTask,
+          intention: routineTask.intention,
+          status: 'traveling',
+          timer: 0,
+          duration: routineTask.duration || 32.0
+        };
+
+        if (this.gameApp?.hud) {
+          this.gameApp.hud.showAutonomousThoughtToast(
+            this.getCharacterConfig()?.name || 'Hero',
+            `[Duty: ${routineTask.badge}] Setting course for ${routineTask.locationName}. ${routineTask.intention}`
+          );
+        }
+        return;
+      }
+    }
+
+    // List of exciting realm landmarks and settlements with verified open pathway coordinates
+    const destinations = [
+      { name: 'Crossroads Sanctuary Bridge', x: 0, z: 12, intention: 'Survey the Great River crossing at the continental crossroads.' },
+      { name: 'High Valoria Castle Town', x: 356, z: -248, intention: 'Stroll along the Grand Lion Fountain and Clocktower promenade in High Valoria.' },
+      { name: 'The Dragon’s Rest Tavern', x: 205, z: -74, intention: 'Check the adventurer bounty board at the tavern square.' },
+      { name: 'Oakhaven Agricultural Village', x: 105, z: 10, intention: 'Patrol along the sunny wheat fields of Oakhaven.' },
+      { name: 'Royal Castle Citadel Gate', x: 380, z: -325, intention: 'Stand guard before King Reginald’s South Barbican Gate.' },
+      { name: 'Princess Aurelia’s Sun Pavilion', x: 470, z: -352, intention: 'Visit the fragrant rose gardens outside the Royal Sun Pavilion.' },
+      { name: 'Fernbrook Woodland Orchard', x: -75, z: 110, intention: 'Stroll beneath the sweet fruit trees of Fernbrook.' },
+      { name: 'Sylvaheim Elven Glade', x: -160, z: 78, intention: 'Observe the radiant Starlight Mana Pool of Sylvaheim.' },
+      { name: 'Moon Spire Sanctuary', x: -200, z: 185, intention: 'Pilgrimage to the elevated Moon Spire colonnades.' },
+      { name: 'Karak-Drak Mountain Bastion', x: 200, z: 182, intention: 'Inspect the massive stone bastion and dwarven guard statues.' },
+      { name: 'Great Blast Furnaces', x: 140, z: 222, intention: 'Watch the rotating giant cogs and molten iron troughs.' },
+      { name: 'Karak-Vorn United Clanstead', x: 105, z: 140, intention: 'Visit the mead halls and Unity Monument at the dwarven clanstead.' },
+      { name: 'Krag’mar Demon Enclave', x: -120, z: -90, intention: 'Scout the perimeter of the smoldering nether outpost.' }
+    ];
+
+    // Filter out destinations too close (< 20m) so the hero makes meaningful exploratory journeys
+    const valid = destinations.filter(d => Math.hypot(d.x - this.position.x, d.z - this.position.z) > 20.0);
+    const chosen = (valid.length > 0) ? valid[Math.floor(Math.random() * valid.length)] : destinations[0];
+
+    const y = getTerrainHeight(chosen.x, chosen.z);
+    this.brain.currentAction = {
+      type: 'WALK_TO',
+      target: chosen.name,
+      targetPos: new THREE.Vector3(chosen.x, y, chosen.z),
+      intention: chosen.intention,
+      status: 'active',
+      timer: 0,
+      duration: 45.0
+    };
+
+    if (this.gameApp?.hud) {
+      this.gameApp.hud.showAutonomousThoughtToast(
+        this.getCharacterConfig()?.name || 'Hero',
+        `Setting course for ${chosen.name}. ${chosen.intention}`
+      );
+    }
+  }
+
+  toggleAutonomous(forceState = undefined, silent = false) {
+    this.isAutonomous = (forceState !== undefined) ? forceState : !this.isAutonomous;
+    this.autonomousDecisionTimer = 0; // Trigger immediate thought
+
+    if (!silent && this.gameApp?.combatSystem) {
+      const p = this.position.clone();
+      p.y += 2.2;
+      const msg = this.isAutonomous ? '🤖 Autonomous AI Mind: ACTIVE [P]' : '🎮 Manual Control: RESUMED [P]';
+      const col = this.isAutonomous ? '#34d399' : '#38bdf8';
+      this.gameApp.combatSystem.spawnFloatingText(p, msg, col);
+    }
+
+    if (this.gameApp?.hud) {
+      this.gameApp.hud.updateAutoMindButton(this.isAutonomous);
+    }
+
+    if (!silent) {
+      audioSystem.playChime();
+    }
+    return this.isAutonomous;
+  }
+
+  processAutonomousMind(delta) {
+    if (!this.brain) {
+      this.initBrain();
+      if (!this.brain) return { x: 0, z: 0 };
+    }
+
+    this.autonomousDecisionTimer -= delta;
+
+    if (this.autonomousDecisionTimer <= 0) {
+      this.autonomousDecisionTimer = 16.0 + Math.random() * 8.0;
+      if (this.gameApp?.perceptionEngine) {
+        const sensory = this.gameApp.perceptionEngine.getSensorySnapshot(this);
+        this.brain.think(sensory).then(thought => {
+          if (thought && this.gameApp?.combatSystem) {
+            const pos = this.position.clone();
+            pos.y += 2.8;
+            const charName = this.getCharacterConfig()?.name || 'Hero';
+            const snippet = (thought.intention || thought.inner_thought || '').slice(0, 36);
+            this.gameApp.combatSystem.spawnFloatingText(pos, `💭 ${charName}: "${snippet}..."`, '#a78bfa');
+          }
+          if (this.gameApp?.hud) {
+            this.gameApp.hud.showAutonomousThoughtToast(this.getCharacterConfig()?.name, thought);
+          }
+        });
+      }
+    }
+
+    const action = this.brain.currentAction;
+    if (!action) {
+      this.pickNextAutonomousDestination();
+      return { x: 0, z: 0 };
+    }
+
+    if (this.autoAttackCooldown > 0) {
+      this.autoAttackCooldown -= delta;
+    }
+
+    // 1. COMBAT DEFENSE: Only engage hostile beasts in the wild if close (< 6.5m) and outside sanctuary zones
+    const inSanctuary = isInSanctuaryZone(this.position.x, this.position.z);
+
+    if (!inSanctuary && this.gameApp?.monsterManager?.monsters) {
+      let nearestBeast = null;
+      let minDist = 6.5; // Only engage if predator is right upon the character
+      this.gameApp.monsterManager.monsters.forEach(m => {
+        if (m.isDead || m.isTamed) return;
+        const d = Math.hypot(m.group.position.x - this.position.x, m.group.position.z - this.position.z);
+        if (d < minDist) {
+          minDist = d;
+          nearestBeast = m;
+        }
+      });
+
+      if (nearestBeast) {
+        const dx = nearestBeast.group.position.x - this.position.x;
+        const dz = nearestBeast.group.position.z - this.position.z;
+        const d = Math.hypot(dx, dz);
+
+        this.targetRotation = Math.atan2(dx, dz);
+
+        if (d > 2.2) {
+          this.isSprinting = false;
+          return { x: dx / d, z: dz / d };
+        } else {
+          // In combat cleave range: strike with a measured cadence (1.2s delay between swings)
+          this.isSprinting = false;
+          if (this.autoAttackCooldown <= 0 && this.attackAnimTimer <= 0 && this.gameApp.handleAttack) {
+            this.gameApp.handleAttack();
+            this.autoAttackCooldown = 1.2;
+          }
+          return { x: 0, z: 0 };
+        }
+      }
+    }
+
+    // 2. EXPLORATION & PATH NAVIGATION: Steer towards destination targetPos via Continental NavGraph
+    if (action.targetPos) {
+      // Build or update navPath if targetPos changed or not present
+      if (!this.navPath || this._lastTargetPos !== action.targetPos) {
+        this._lastTargetPos = action.targetPos;
+        this.navPath = continentalNavGraph.findPath(this.position, action.targetPos);
+        this.navIndex = 0;
+      }
+
+      // Determine active steering waypoint
+      let currentWaypoint = action.targetPos;
+      if (this.navPath && this.navPath.length > 0) {
+        if (this.navIndex < this.navPath.length) {
+          const wp = this.navPath[this.navIndex];
+          const distToWp = Math.hypot(wp.x - this.position.x, wp.z - this.position.z);
+          // If close to intermediate waypoint, advance to next
+          if (distToWp < 3.5 && this.navIndex < this.navPath.length - 1) {
+            this.navIndex++;
+          }
+          currentWaypoint = this.navPath[this.navIndex];
+        }
+      }
+
+      const dxFinal = action.targetPos.x - this.position.x;
+      const dzFinal = action.targetPos.z - this.position.z;
+      const finalDist = Math.hypot(dxFinal, dzFinal);
+
+      // Arrival threshold at final destination
+      if (finalDist <= 4.0 || action.status === 'working') {
+        this.navPath = null;
+        if (action.taskData) {
+          if (action.status !== 'working') {
+            action.status = 'working';
+            action.timer = 0;
+            this.stuckTimer = 0;
+            this.avoidanceHoldTimer = 0;
+          }
+
+          action.timer += delta;
+          if (action.timer < (action.duration || 30.0)) {
+            // Stay at location and perform task!
+            return { x: 0, z: 0 };
+          }
+
+          // Work finished, advance to next duty
+          action.status = 'arrived';
+          if (this.gameApp?.routineSystem) {
+            this.gameApp.routineSystem.advanceToNextTask(this.characterId, this.brain);
+          }
+          this.pickNextAutonomousDestination();
+          return { x: 0, z: 0 };
+        } else {
+          action.status = 'arrived';
+          this.stuckTimer = 0;
+          this.avoidanceHoldTimer = 0;
+          this.pickNextAutonomousDestination();
+          return { x: 0, z: 0 };
+        }
+      }
+
+      // Steer towards current intermediate waypoint
+      const dx = currentWaypoint.x - this.position.x;
+      const dz = currentWaypoint.z - this.position.z;
+      const dist = Math.hypot(dx, dz);
+
+      this.isSprinting = (finalDist > 35.0 && dist > 15.0);
+      let dirX = dist > 0.001 ? dx / dist : 0;
+      let dirZ = dist > 0.001 ? dz / dist : 0;
+
+      // Obstacle avoidance & tangent steering:
+      if (this.avoidanceHoldTimer > 0) {
+        this.avoidanceHoldTimer -= delta;
+      }
+
+      // Proactive forward lookahead
+      const lookahead = 2.2;
+      const hitCenter = (this.colliders && this.colliders.length > 0) &&
+        checkCollision(this.position.x + dirX * lookahead, this.position.z + dirZ * lookahead, this.radius + 0.15, this.colliders);
+      const isStuck = this.stuckTimer > 0.7;
+
+      if (hitCenter || isStuck || this.avoidanceHoldTimer > 0) {
+        if (this.avoidanceHoldTimer <= 0 && this.colliders && this.colliders.length > 0) {
+          const tangX = -dirZ;
+          const tangZ = dirX;
+
+          // Test right whisker
+          const rightX = this.position.x + (dirX * 0.5 + tangX * 0.866) * 2.4;
+          const rightZ = this.position.z + (dirZ * 0.5 + tangZ * 0.866) * 2.4;
+          const rightBlocked = checkCollision(rightX, rightZ, this.radius + 0.1, this.colliders);
+
+          // Test left whisker
+          const leftX = this.position.x + (dirX * 0.5 - tangX * 0.866) * 2.4;
+          const leftZ = this.position.z + (dirZ * 0.5 - tangZ * 0.866) * 2.4;
+          const leftBlocked = checkCollision(leftX, leftZ, this.radius + 0.1, this.colliders);
+
+          if (!rightBlocked && leftBlocked) {
+            this.avoidanceDir = 1; // Steer right
+            this.avoidanceHoldTimer = 0.6;
+          } else if (rightBlocked && !leftBlocked) {
+            this.avoidanceDir = -1; // Steer left
+            this.avoidanceHoldTimer = 0.6;
+          } else if (!rightBlocked && !leftBlocked) {
+            this.avoidanceDir = 1;
+            this.avoidanceHoldTimer = 0.4;
+          } else {
+            // Both blocked: concave corner or direct wall; hard tangent turn
+            this.avoidanceDir = (Math.random() < 0.5 ? 1 : -1);
+            this.avoidanceHoldTimer = 0.8;
+          }
+        }
+
+        // Steer primarily along tangent (15% forward + 95% tangent when blocked)
+        const forwardWeight = hitCenter ? 0.15 : 0.40;
+        const tangWeight = hitCenter ? 0.95 : 0.75;
+        const steerTangX = -dirZ * this.avoidanceDir;
+        const steerTangZ = dirX * this.avoidanceDir;
+
+        let finalX = dirX * forwardWeight + steerTangX * tangWeight;
+        let finalZ = dirZ * forwardWeight + steerTangZ * tangWeight;
+        const finalLen = Math.hypot(finalX, finalZ);
+        if (finalLen > 0.001) {
+          finalX /= finalLen;
+          finalZ /= finalLen;
+        }
+
+        this.isSprinting = false;
+        return { x: finalX, z: finalZ };
+      }
+
+      return { x: dirX, z: dirZ };
+    } else {
+      this.pickNextAutonomousDestination();
+    }
+
+    return { x: 0, z: 0 };
   }
 
   attachMagicSword(charId) {
@@ -209,6 +551,58 @@ export class Player {
     this.colliders = colliders;
     // Resolve immediately on collider load
     resolveCircleCollision(this.position, this.radius, this.colliders, 3);
+    this.resolveNearbyEntityCollisions();
+  }
+
+  resolveNearbyEntityCollisions() {
+    if (!this.gameApp) return;
+
+    // 1. The other 5 main characters
+    if (this.gameApp.npcManager && this.gameApp.npcManager.npcs) {
+      resolveEntityCollision(this.position, this.radius, this.gameApp.npcManager.npcs, 0.55);
+    }
+    // 2. Village Settlers
+    if (this.gameApp.villageSettlement && this.gameApp.villageSettlement.villagers) {
+      resolveEntityCollision(this.position, this.radius, this.gameApp.villageSettlement.villagers, 0.55);
+    }
+    // 3. Landmark Realm NPCs
+    if (this.gameApp.realmNPCs && this.gameApp.realmNPCs.npcs) {
+      resolveEntityCollision(this.position, this.radius, this.gameApp.realmNPCs.npcs, 0.55);
+    }
+    // 4. Young Pip quest entity
+    if (this.gameApp.pipTaskSystem && this.gameApp.pipTaskSystem.pipEntity) {
+      resolveEntityCollision(this.position, this.radius, [this.gameApp.pipTaskSystem.pipEntity], 0.5);
+    }
+    // 5. Vehicle (Warhorse) if not riding
+    if (this.gameApp.vehicle && !this.isInVehicle) {
+      resolveEntityCollision(this.position, this.radius, [this.gameApp.vehicle], 0.95);
+    }
+  }
+
+  isTargetNearEntity(targetPos) {
+    if (!this.gameApp || !targetPos) return false;
+    const thresholdSq = 2.4 * 2.4;
+
+    const check = (list) => {
+      if (!list) return false;
+      const arr = Array.isArray(list) ? list : (list.values ? Array.from(list.values()) : []);
+      for (let i = 0; i < arr.length; i++) {
+        const item = arr[i];
+        const pos = item?.position || item?.group?.position;
+        if (pos) {
+          const d2 = (targetPos.x - pos.x) ** 2 + (targetPos.z - pos.z) ** 2;
+          if (d2 < thresholdSq) return true;
+        }
+      }
+      return false;
+    };
+
+    return (
+      check(this.gameApp.npcManager?.npcs) ||
+      check(this.gameApp.villageSettlement?.villagers) ||
+      check(this.gameApp.realmNPCs?.npcs) ||
+      check(this.gameApp.pipTaskSystem?.pipEntity ? [this.gameApp.pipTaskSystem.pipEntity] : null)
+    );
   }
 
   initClickIndicator() {
@@ -228,7 +622,8 @@ export class Player {
   teleport(x, z) {
     this.position.x = x;
     this.position.z = z;
-    resolveCircleCollision(this.position, this.radius, this.colliders, 3);
+    resolveCircleCollision(this.position, this.radius, this.colliders, 5);
+    this.resolveNearbyEntityCollisions();
     this.position.y = getTerrainHeight(this.position.x, this.position.z);
     this.group.position.copy(this.position);
     this.clickTarget = null;
@@ -261,6 +656,60 @@ export class Player {
       if (onLevelUp) onLevelUp(this.level);
     }
     return leveled;
+  }
+
+  addGold(amount) {
+    this.gold = Math.max(0, (this.gold || 0) + amount);
+    return this.gold;
+  }
+
+  takeDamage(amount) {
+    if (this.isGodMode) return 0;
+    const actual = Math.max(1, Math.floor(amount));
+    this.currentHp = Math.max(0, this.currentHp - actual);
+    return actual;
+  }
+
+  exportState() {
+    return {
+      characterId: this.characterId,
+      position: { x: this.position.x, y: this.position.y, z: this.position.z },
+      rotation: this.currentRotation,
+      level: this.level,
+      xp: this.xp,
+      xpToNext: this.xpToNext,
+      maxHp: this.maxHp,
+      currentHp: this.currentHp,
+      attackPower: this.attackPower,
+      gold: this.gold || 100,
+      isAutonomous: this.isAutonomous
+    };
+  }
+
+  importState(data) {
+    if (!data) return;
+    if (data.characterId && data.characterId !== this.characterId) {
+      this.setCharacter(data.characterId);
+    }
+    if (data.position && typeof data.position.x === 'number') {
+      this.position.set(data.position.x, data.position.y, data.position.z);
+      this.group.position.copy(this.position);
+    }
+    if (typeof data.rotation === 'number') {
+      this.currentRotation = data.rotation;
+      this.targetRotation = data.rotation;
+      this.group.rotation.y = data.rotation;
+    }
+    if (typeof data.level === 'number') this.level = data.level;
+    if (typeof data.xp === 'number') this.xp = data.xp;
+    if (typeof data.xpToNext === 'number') this.xpToNext = data.xpToNext;
+    if (typeof data.maxHp === 'number') this.maxHp = data.maxHp;
+    if (typeof data.currentHp === 'number') this.currentHp = data.currentHp;
+    if (typeof data.attackPower === 'number') this.attackPower = data.attackPower;
+    if (typeof data.gold === 'number') this.gold = data.gold;
+    if (typeof data.isAutonomous === 'boolean') {
+      this.toggleAutonomous(data.isAutonomous, true);
+    }
   }
 
   triggerAttackAnim() {
@@ -327,7 +776,10 @@ export class Player {
       const dz = this.clickTarget.z - this.position.z;
       const dist = Math.hypot(dx, dz);
 
-      if (dist > 0.8) {
+      // Stop safely outside if target is near an NPC or character
+      const stopDist = this.isTargetNearEntity(this.clickTarget) ? 1.8 : 0.8;
+
+      if (dist > stopDist) {
         moveX = dx / dist;
         moveZ = dz / dist;
       } else {
@@ -340,16 +792,32 @@ export class Player {
     if (inputManager.moveVector.lengthSq() > 0.01) {
       moveX = inputManager.moveVector.x;
       moveZ = inputManager.moveVector.y;
+      this.isSprinting = inputManager.isSprinting;
       this.clickTarget = null;
       this.clickRing.material.opacity = 0;
+    } else if (this.isAutonomous && this.gameApp && !this.clickTarget) {
+      if (this._inAutoConversation) {
+        // Paused in spontaneous social dialogue
+        moveX = 0;
+        moveZ = 0;
+      } else {
+        // 100% Autonomous LLM Self-Driving & Decisions (Character moves itself)
+        const autoMove = this.processAutonomousMind(delta);
+        moveX = autoMove.x;
+        moveZ = autoMove.z;
+      }
+    } else {
+      this.isSprinting = inputManager.isSprinting;
     }
 
     const isMoving = (Math.hypot(moveX, moveZ) > 0.05);
     this.isMoving = isMoving;
-    this.isSprinting = inputManager.isSprinting;
 
     if (isMoving) {
-      const speed = this.isSprinting ? this.runSpeed : this.walkSpeed;
+      // In autonomous mode use controlled, natural human speeds; manual mode uses responsive player speeds
+      const autoSpeed = (this.isSprinting ? 7.2 : 4.2) * (this.speedMultiplier || 1.0);
+      const manualSpeed = (this.isSprinting ? this.runSpeed : this.walkSpeed) * (this.speedMultiplier || 1.0);
+      const speed = this.isAutonomous ? autoSpeed : manualSpeed;
       const totalDist = speed * delta;
       // Sub-step prevents tunneling through thin walls: maximum 10cm per step!
       const maxSubStep = 0.10;
@@ -362,10 +830,39 @@ export class Player {
       for (let s = 0; s < steps; s++) {
         this.position.x += moveX * speed * subDelta;
         this.position.z += moveZ * speed * subDelta;
+        // Entity push first, world colliders second so walls always take precedence!
+        this.resolveNearbyEntityCollisions();
         resolveCircleCollision(this.position, this.radius, this.colliders, 3);
       }
+      ejectFromColliders(this.position, this.radius, this.colliders);
 
-      // If click-to-move got completely stopped by a wall, stop attempting
+      // Reactive stuck detection & recovery for autonomous movement
+      if (this.isAutonomous) {
+        const moved = Math.hypot(this.position.x - prevX, this.position.z - prevZ);
+        const expected = speed * delta;
+        if (moved < expected * 0.25) {
+          // Physical displacement blocked by collider
+          this.stuckTimer += delta;
+          if (this.stuckTimer > 1.8 && this.avoidanceHoldTimer <= 0) {
+            this.avoidanceDir = -this.avoidanceDir;
+            this.avoidanceHoldTimer = 0.8;
+            ejectFromColliders(this.position, this.radius, this.colliders);
+          }
+          if (this.stuckTimer > 3.2) {
+            // Wedged in geometry; firmly eject and re-route
+            ejectFromColliders(this.position, this.radius, this.colliders, 1.0);
+            this.stuckTimer = 0;
+            this.avoidanceHoldTimer = 0;
+            this.navPath = null;
+            this.pickNextAutonomousDestination();
+          }
+        } else {
+          // Progressing freely; decay stuck timer
+          this.stuckTimer = Math.max(0, this.stuckTimer - delta * 3.0);
+        }
+      }
+
+      // If click-to-move got completely stopped by a wall or entity, stop attempting
       if (this.clickTarget) {
         const moved = Math.hypot(this.position.x - prevX, this.position.z - prevZ);
         if (moved < 0.005) {
@@ -374,12 +871,13 @@ export class Player {
         }
       }
 
-      // Smooth rotation towards movement direction
+      // Smooth rotation towards movement direction (gentle 6.5 in autonomous mode to prevent jitter)
       this.targetRotation = Math.atan2(moveX, moveZ);
       let diff = this.targetRotation - this.currentRotation;
       while (diff < -Math.PI) diff += Math.PI * 2;
       while (diff > Math.PI) diff -= Math.PI * 2;
-      this.currentRotation += diff * Math.min(1.0, delta * 14.0);
+      const turnRate = this.isAutonomous ? 6.5 : 12.0;
+      this.currentRotation += diff * Math.min(1.0, delta * turnRate);
 
       // Footstep sound
       const surface = this.detectSurface(this.position.x, this.position.z);
@@ -403,7 +901,9 @@ export class Player {
       if (this.animNodes.torso) this.animNodes.torso.position.y = 1.35;
 
       // Keep pushed out even while standing still
+      this.resolveNearbyEntityCollisions();
       resolveCircleCollision(this.position, this.radius, this.colliders, 2);
+      ejectFromColliders(this.position, this.radius, this.colliders);
     }
 
     // Attack swing animation override with 3-hit combo styles
@@ -470,7 +970,7 @@ export class Player {
     this.group.rotation.y = this.currentRotation;
 
     // Pulse click ring animation
-    if (this.clickRing.material.opacity > 0.05) {
+    if (this.clickRing && this.clickRing.material && this.clickRing.material.opacity > 0.05) {
       this.clickRing.scale.addScalar(delta * 0.4);
       this.clickRing.material.opacity = Math.max(0, this.clickRing.material.opacity - delta * 0.6);
     }

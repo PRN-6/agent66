@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { getTerrainHeight } from '../utils/math.js';
+import { CastleTown } from './CastleTown.js';
 
 export class KingdomBiome {
   constructor(scene, dayNightCycle) {
@@ -11,6 +12,8 @@ export class KingdomBiome {
 
     this.initCobblestoneRoads();
     this.initRoyalCitadel();
+    this.castleTown = new CastleTown(this.scene, this.dayNightCycle);
+    this.colliders.push(...this.castleTown.colliders);
     this.initTownMarketSquare();
     this.initMedievalHouses();
     this.initWindmill();
@@ -974,7 +977,7 @@ export class KingdomBiome {
   initKingdomDefenses() {
     // Border watchtowers along the road to the crossroads and neighboring realms
     const towerPositions = [
-      [35, 10],   // Crossroads gate tower North
+      [38, -18],  // Crossroads border watchtower North (placed on scenic riverside bluff clear of bridge and road)
       [35, -250], // Northwest border watchtower
       [330, -250],// Northeast border watchtower
       [330, 60]   // Southeast border watchtower
@@ -985,7 +988,8 @@ export class KingdomBiome {
 
     towerPositions.forEach(([x, z]) => {
       const towerGroup = new THREE.Group();
-      towerGroup.position.set(x, 0.5, z);
+      const y = getTerrainHeight(x, z);
+      towerGroup.position.set(x, y, z);
 
       // Square watchtower
       const tower = new THREE.Mesh(new THREE.BoxGeometry(7, 18, 7), stoneMat);
@@ -1082,6 +1086,9 @@ export class KingdomBiome {
   }
 
   update(delta) {
+    if (this.castleTown) {
+      this.castleTown.update(delta);
+    }
     this.animatedObjects.forEach(obj => {
       if (obj.type === 'windmill') {
         obj.mesh.rotation.z += delta * obj.speed;

@@ -40,6 +40,20 @@ The open world is divided into **4 distinct faction territories** arrayed around
 
 #### ⚔️ The Land for the Humans (Crown Lands of Valoria — North-East)
 - **Grand Royal Castle Citadel**: Authentic medieval fortress with defensive moat, fortified arched drawbridge with iron chains, twin barbican gate towers with machicolations, iron portcullis, outer bailey with castle garrison armory, weapon racks, sparring dummies, royal warhorse stables, water cistern, four monumental stone statues of ancient kings, and the Great Royal Donjon with an open enterable Grand Throne Hall (54m celestial spire, velvet red carpet runner, 8 stone columns, royal banquet feast tables, and King Reginald's High Throne Dais at `[380, -375]`, South Barbican Gate at `[380, -325]`).
+- **High Valoria Castle Town (The Citadel Borough — `[370, -250]`)**: Beautiful medieval high town situated right outside the castle drawbridge gates:
+  - **Monumental Marble Fountain of the Royal Lion**: 3-tiered cascading fountain with water spray, golden lion crest, octagonal stone basin, and circular radial mosaic plaza.
+  - **The Grand Clocktower of High Valoria**: 28m high stone tower with 4 rotating clock dials, open arched belfry with swinging bronze bell, and weathercock spire.
+  - **The Royal Bank & Treasury of Valoria**: Classical ashlar facade with 4 fluted marble columns, golden pediment, reinforced iron vault doors, and barred stained glass.
+  - **The High Alchemist's Spire & Conservatory**: Sandstone hall with attached 18m astronomical observatory tower, revolving copper dome, telescope, greenhouse bay with pulsing mana crystals, and herb drying trellis.
+  - **The Silver Stag Grand Coaching Inn & Winery**: 2-story half-timbered coaching inn with cantilevered upper floor, twin brick chimneys, outdoor dining patio with picnic tables, oak wine casks, and glowing lanterns.
+  - **The Master Armourer & Royal Smithy**: Heavy stone workshop with open arcade, blazing forge hearth, dual anvils, quench tub, and weapon racks.
+  - **The Court Library & Cartography House**: Classical stone building with carved arched entrance, leaded bay windows, and celestial armillary sphere balcony.
+  - **The Royal Patisserie & Guild Bakery**: Charming timber shop with red roof tiles, outdoor bread displays with golden sourdough loaves, and flour sacks.
+  - **Patrician Merchant Villas**: 4 elegant multi-story townhouses with dormers, climbing ivy, stone chimneys, and flowerboxes blooming with geraniums.
+  - **The Royal Flower & Artisan Market**: 4 boutique striped kiosks (Royal Florist, Silks & Tapestries, Goldsmith & Jewelers, Rare Spices).
+  - **The Sunken Rose Garden & Botanical Sanctuary**: Low marble balustrades, white gazebo with climbing rose vines, central sundial, 4 blossoming pink cherry/dogwood trees, and hedged paths.
+  - **Town Fortifications & South Gatehouse**: Twin stone watchtowers with conical slate roofs, royal lion banner archway, and night braziers.
+  - **Living Town Citizens**: Lord Brandon (Chancellor), Lady Genevieve (Court Dame), Master Corvus (Clockmaker), Alchemist Zephyr, Helena (Flower Maiden), and Town Crier Silas.
 - **Town Market Bazaar**: Central stone well and fountain, vendor stalls with striped canopies (fruit, grains, potions, armor), crates and barrels (`[205, -110]`).
 - **Old-Era Medieval Townhouses**: Timber-framed dwellings with cantilevered upper floors, exposed beams, steep gabled roofs, and stone chimneys.
 - **Kingdom Windmill**: Rotating cloth sails on a traditional stone mill base (`[60, -60]`).
@@ -199,6 +213,22 @@ Step inside any structure to watch the roof smoothly lift up and fade into trans
     - **Continuous Depenetration Safeguard**: Any wild monster pushed or bumped near a sanctuary boundary is continuously pushed out beyond the safety margin.
   - **Tamed Companion Access**: Only the player's tamed pet companion (`m.isTamed`) is permitted to cross sanctuary boundaries with their master.
 
+### 15. The Creator's Eye: AI Mind Dashboard & Groq LLM Cognition (`src/ui/CreatorDashboard.js`)
+- **Direct 3D Click-to-Inspect**:
+  - Simply left-click on any character or NPC directly in the 3D world (or select them from the Citizen Directory or press `[K]`) to open the **Creator Mind Dashboard** focused on their consciousness.
+- **Groq AI Integration & Ultra-Fast Cognition**:
+  - Direct integration with Groq's high-speed cloud LLM inference engine (`llama-3.3-70b-versatile`, `llama-3.1-8b-instant`, `mixtral-8x7b-32768`) achieving blazing speeds of **500+ to 600+ tokens/sec**!
+  - Single free Groq API key powers all NPCs across the entire world via on-demand querying, caching, and rate-friendly execution.
+  - Client-side privacy: API keys remain strictly stored in local browser storage (`localStorage`).
+  - **Zero-Latency Heuristic Fallback**: Runs full contextual psychological thoughts even without an API key or when offline.
+- **Real-Time 3D Sensory Perception Matrix (`WorldPerceptionEngine.js`)**:
+  - Live spatial telemetry: Exact world coordinates $(X, Z)$, nearest landmark, sanctuary status, day/night solar phase, distance to the Creator/Player, and detected entities in their $32\text{m}$ cone.
+  - Automatically incorporates canonical race lifespans and inter-racial tensions (Elves 3,000 yrs, Dwarves 500 yrs, Demons 10,000+ yrs, Humans 80 yrs).
+- **Active Consciousness Stream**:
+  - Displays formatted inner thoughts, environmental observations, current emotional mood, behavioral intentions, and words murmured aloud.
+- **✨ Divine Whisper Console (The Creator's Decree)**:
+  - Type a decree or revelation directly into any character's mind. The character's AI immediately processes the thought and manifests a glowing 3D billboard above their head in the world!
+
 ---
 
 ## 🕹️ Controls
@@ -210,11 +240,12 @@ Step inside any structure to watch the roof smoothly lift up and fade into trans
 | **F** or **Space** (on foot) | **✨ Magic Sword Skills** (3-Hit Combo: Crescent ➔ Cross Arc ➔ 360° Whirlwind Tempest Nova) |
 | **G** | **🐾 Tame nearby monster** (Only 1 active companion) |
 | **U** | **💔 Release current tamed companion** |
-| **Left Click / Tap** | Click on ground to walk to destination |
+| **Left Click / Tap** | Click on ground to walk / **Click any NPC in 3D to inspect their AI Mind** |
 | **Mouse Wheel** | Zoom In / Out (Nudges altitude in Free Look) |
 | **E** | Talk to NPC Characters / Mount or Dismount Steed |
 | **M** | Open / Close Fullscreen World Map & Fast Travel |
 | **L** | **Open / Close Races & Lifespans Codex** |
+| **K** | **🧠 Open / Close Creator Mind Dashboard (Groq AI Cognition & Divine Whispers)** |
 | **1** | Switch to **2.5D Isometric View** |
 | **2** | Switch to **2D Top-Down Map View** |
 | **3** | Switch to **3D Follow View** |

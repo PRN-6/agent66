@@ -98,6 +98,7 @@ agent66/
     │   └── RealmNPCs.js         # Landmark race NPCs (Humans, Demons, Elves, Dwarves)
     ├── systems/
     │   ├── CameraManager.js     # 2.5D Isometric, 2D Top-Down, 3D Follow, and Creator Free-Look flight
+    │   ├── MythicalDragonSystem.js # Colossal Apex Dragons (Ignis, Glacius, Chimera) & Village/Main Area Raids
     │   ├── MagicSwordSystem.js  # 3-Hit Magic Sword Combos & 3D Flying Crescent Blade Waves (Air Slashes)
     │   ├── NPCTownBuilder.js    # Autonomous NPC house & settlement construction system
     │   ├── Collision.js         # Sub-stepped continuous collision & depenetration (in utils/)
@@ -115,6 +116,7 @@ agent66/
         ├── Terrain.js           # Low-poly faceted heightmap terrain & 4-territory vertex coloring
         ├── Water.js             # Animated vertex wave water plane for Great River
         ├── KingdomBiome.js      # Human Kingdom: Royal Castle Citadel, Bazaar, Windmill, Cobblestone
+        ├── CastleTown.js        # High Valoria Castle Town: Grand Lion Fountain, Clocktower, Bank, Smithy, Inn, Stalls
         ├── DemonBiome.js        # Demon Territory: Obsidian Dread Keep, Lava pools, Basalt spires, Bone Gate
         ├── ElvenBiome.js        # Elven Forest: Moon Spire Sanctuary, Sacred Elder Trees, Canopy Bridges
         ├── DwarfBiome.js        # Dwarven Industry City: Mountain Bastion, Blast Furnaces, Rotating Gears
@@ -133,6 +135,7 @@ World size is **1600m × 1600m** (`-800` to `+800` on X and Z axes). Center is `
 | :--- | :--- | :--- | :--- |
 | **Central Crossroads Bridge & Obelisk** | Nexus Hub | `(0, 10)` | Spawn point of Hero Aiden; ancient bridge over Great River; 4-Way Faction Waypoint Obelisk at `(34, 10)`; Warhorse nearby |
 | **Royal Castle Citadel** | Human Kingdom | `(380, -380)` | Authentic medieval castle with moat, arched drawbridge, barbican gatehouse, garrison armory, royal stables, King Reginald's Throne Room (Gate at `[380, -325]`) |
+| **High Valoria Castle Town** | Human Kingdom | `(370, -250)` | Magnificent capital high town outside Citadel: 3-tier Marble Lion Fountain, 28m Clocktower, Royal Bank, Alchemist Spire, Silver Stag Inn, Smithy, Flower Market & Sunken Rose Garden |
 | **Princess Aurelia's Royal Pavilion** | Human Kingdom | `(470, -370)` | Elegant sun pavilion & manor in East Royal Gardens with marble columns & rose planters (Spawn at `[470, -365]`) |
 | **Town Market Bazaar** | Human Kingdom | `(205, -110)` | Central fountain well, 4 merchant stalls, Kage's haunt |
 | **The Dragon's Rest Tavern** | Human Kingdom | `(205, -85)` | Enterable tavern with ale barrels, hearth, banquet tables, bounty board |
@@ -182,17 +185,21 @@ When picking up development in any code editor or account, refer to the master b
 The user acts as **The Creator of the World** (Divine Overseer), while the 6 main characters and realm NPCs possess their own **individual AI Minds (LLM Cognitive Agents)** with perception, memories, goals, and autonomous actions.
 
 - **Phase 1: Environment & Sensory/Actuator Infrastructure**
-  - [ ] **World Perception Engine**: Spatial coordinates, biome awareness, entity proximity cone (monsters, NPCs, Creator), temporal day/night snapshot.
-  - [ ] **World Action Execution Engine**: Navigation along Imperial Roads, speech bubbles with blips, emotes/gestures, campfire/tavern interaction, and building hooks via `NPCTownBuilder.js`.
-  - [ ] **The Creator's Eye (Mind Inspector & Divine Decrees)**: Modal to inspect any character's inner monologue, goal, emotional vitals, and memory stream, with an interface to whisper divine thoughts directly into their consciousness.
+  - [x] **World Perception Engine**: Spatial coordinates, biome awareness, entity proximity cone (monsters, NPCs, Creator), temporal day/night snapshot, canonical race lifespan context (`src/ai/WorldPerceptionEngine.js`).
+  - [x] **World Action Execution Engine**: Actuation of `WALK_TO`, `WORK_AT`, `TALK_TO`, `TRADE_WITH`, `BUILD` (via `NPCTownBuilder.js`), `FIGHT`, `REST_AT`.
+  - [x] **The Creator's Eye (Mind Inspector & Divine Decrees)**: Modal to inspect any character's inner monologue, goal, emotional vitals, and memory stream, with an interface to whisper divine thoughts directly into their consciousness (`src/ui/CreatorDashboard.js`, `[K]` hotkey, and direct 3D Click-to-Inspect).
 - **Phase 2: Individual AI Mind Architecture (Cognitive Agent Framework)**
-  - [ ] **Agent Persona & Lifespan Schemas**: Deep system prompts for Aiden, Aurelia, Malakor, Kage, Reginald, Vance grounded in canonical race lifespans and prejudices.
-  - [ ] **Memory Stream & Reflection**: Short-term working buffer + episodic memory log with importance scoring.
-  - [ ] **Multi-Backend Brain Adapter**: In-browser WebLLM/Transformers.js (free & private) + Cloud LLM (Gemini/Ollama) + Zero-latency heuristic fallback.
+  - [x] **Multi-Backend Brain Adapter**: Groq Cloud LLM (`llama-3.3-70b-versatile`, `llama-3.1-8b-instant`, `mixtral-8x7b-32768`) + Local Ollama (`qwen2.5:7b-instruct`, `qwen2.5-coder:7b`) with Vite zero-CORS proxy + zero-latency procedural heuristic fallback (`src/ai/GroqBrainAdapter.js`).
+  - [x] **Reusable NPCBrain Framework (`src/ai/NPCBrain.js`)**: Persona & Lifespan grounding, episodic memory stream with importance scores (1–10), Cognitive LOD (Tier 1 Ambient utility, Tier 2 Important Agent, Tier 3 In-Focus live consciousness), and action dispatching.
+  - [x] **Memory Stream & Reflection**: Short-term working buffer + episodic memory log with importance scoring and divine decree logging.
 - **Phase 3: The 6 Main Characters' Autonomous Wills**
-  - [ ] Bring Aiden, Aurelia, Malakor, Kage, Reginald, and Vance to life as self-directed agents with their own daily motivations.
-- **Phase 4: Living Community Social Dynamics**
-  - [ ] Autonomous dialogue when NPCs cross paths; goal-driven work/tavern/sleep cycles; settlement construction requests.
+  - [x] Attached `NPCBrain` to Aiden, Aurelia, Malakor, Kage, Reginald, Vance as Tier 2 Important Agents with autonomous reflections and role-driven behaviors.
+- **Phase 4: Living Community Social Dynamics & Quests**
+  - [x] **Young Pip's Questline: "Path to Knighthood" (`src/systems/PipTaskSystem.js`)**: 4 progressive medieval tasks in Oakhaven (Pumpkins harvest, Secret wooden sword retrieval, Crossroads bridge scout, Forest beast hunt) with 3D quest markers (`❗` / `❓`), world collectable props, HUD tracker card, and `NPCBrain` memory synchronization.
+  - [x] **Autonomous Social Encounters & Dialogue (`src/ai/SocialEncounterEngine.js`)**: Inspired by Stanford Generative Agents & AI Town. NPCs stop and hold conversational stance when crossing paths, exchange contextual 3D speech bubbles, and record shared episodic memories in real time.
+  - [x] **Physics-Based Game AI Locomotion (`src/ai/YukaLocomotionEngine.js`)**: Powered by `yuka` (`Mugen87/yuka`). Smooth physics steering, deceleration ramps, continuous heading, and mutual separation behavior preventing clumping and teleportation.
+  - [x] **Autonomous Character Tasks & Continental Daily Routines (`src/systems/CharacterRoutineSystem.js`)**: Multi-location daily schedules for all 6 characters and realm figures (harvesting, sword katas, council decrees, void rituals, forge crafting, tavern resting) with animated gestures, interactive Tasks Agenda modal (`[J]`), and God's Roam spectator tracking.
+  - [ ] Goal-driven work/tavern/sleep cycles; settlement construction requests.
 - **Phase 5: The Creator's Sandbox**
   - [ ] Realm-wide Divine Decrees (Blood Moon, Solar Blessing, Tournament) and spirit free-cam.
 
@@ -209,3 +216,9 @@ Before concluding any task or switching branches:
 5. Verify magic sword skills: Press `F` to attack; verify 3-hit combo sequence (Combo 1: Crescent Wave, Combo 2: Cross Nether Cleave, Combo 3: 360° Whirlwind Tempest Nova) cleaves monsters with pierce, damage text, and sparks.
 6. Verify race lifespans: Press `L` or click `⏳` on the HUD to verify the Races & Lifespans Codex modal opens with all 4 race cards and the comparison scale, and talk to any NPC (`E`) to confirm the race/age/lifespan pill in the dialogue box.
 7. Verify monster taming: Approach any monster, press `G` (or click `🐾 Tame Monster`) to tame; verify cyan loyalty aura appears, pet follows and only ONE tamed pet can exist; press `U` to release.
+8. Verify Creator Mind Dashboard & Groq AI Cognition: Press `K` or click `🧠 Mind Dashboard` (or click directly on any NPC model in the 3D scene); verify the Creator Mind Dashboard opens with real-time 3D Sensory Perception Matrix (location, landmark, sanctuary status, creator distance, nearby entities, race lifespan), active consciousness thought stream, Groq API key manager with latency test, and Divine Whisper console.
+9. Verify dynamic weather & RPG compass: Verify the top Skyrim-style compass tape glides smoothly with camera yaw displaying cardinal directions, distance pills, and landmark icons; click weather buttons (`☀️ Clear`, `🌧️ Rain`, `❄️ Snow`, `🔥 Ash`) on the time widget to verify dynamic precipitation particles and procedural thunder.
+10. Verify character tasks & daily agendas: Press `J` or click `📋 Tasks [J]` on the top toolbar to open the Realm Citizen Tasks & Daily Agendas modal; verify all 6 characters have active multi-location tasks across the continent with live countdown progress bars, procedural work animations (sword katas, crop harvesting, praying, forging), and one-click 'Watch in God's Roam' spectator tracking.
+11. Verify anti-stuck navigation & camera collision: Verify characters route smoothly around obstacles via `ContinentalNavGraph` (e.g. High Valoria bypass around Lion Fountain, Crossroads bridge over Great River); verify Spring-Arm camera prevents clipping through buildings and models when following or spectating characters in God's Roam; verify 3D click-to-follow from God's View glides seamlessly to target character.
+12. Verify realm state persistence & offline progression engine: Verify page refresh (`F5`) seamlessly restores exact coordinates, active character, Level/XP, Gold, tamed pet, day/night time, and daily routine progress without resetting to initial spawn; test offline simulation modal by returning after being away to inspect simulated solar cycles and citizen deeds; verify Vercel serverless API (`/api/sync`), `vercel.json` routing, and PWA manifest.
+13. Verify God Mode & Item Spawner Sanctuary, Magic Hotbar & 3D Orbit Camera: Press `K` or click `👑 God Mode [K]` on the HUD to verify the clean God Mode Sanctuary opens with 7 dedicated tabs (God Powers, Spawn Items, Spawn Monsters, Spawn Props, Magic Spells, Citizen Minds, AI Config); verify spawning items drops rotating 3D models with beacons at player feet with proximity pickup; verify magic skills hotbar `[Q] [R] [T] [Y]` casts spells with procedural VFX and cooldown sweeps; verify 3D perspective camera supports 360° mouse drag orbit and scroll zoom with spring-arm anti-clip.

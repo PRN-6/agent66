@@ -172,17 +172,21 @@ export class Traffic {
         p.group.position.y = 0.55 + Math.abs(Math.sin(p.animTime)) * 0.06;
       }
 
-      // Wrap-around
-      if (r.dirX > 0 && p.group.position.x > r.maxX) {
-        p.group.position.x = r.minX;
-      } else if (r.dirX < 0 && p.group.position.x < r.minX) {
-        p.group.position.x = r.maxX;
+      // Smoothly reverse patrol direction at route boundaries instead of teleporting
+      if (r.dirX > 0 && p.group.position.x >= r.maxX) {
+        r.dirX = -1;
+        p.group.rotation.y = Math.atan2(r.dirX, r.dirZ);
+      } else if (r.dirX < 0 && p.group.position.x <= r.minX) {
+        r.dirX = 1;
+        p.group.rotation.y = Math.atan2(r.dirX, r.dirZ);
       }
 
-      if (r.dirZ > 0 && p.group.position.z > r.maxZ) {
-        p.group.position.z = r.minZ;
-      } else if (r.dirZ < 0 && p.group.position.z < r.minZ) {
-        p.group.position.z = r.maxZ;
+      if (r.dirZ > 0 && p.group.position.z >= r.maxZ) {
+        r.dirZ = -1;
+        p.group.rotation.y = Math.atan2(r.dirX, r.dirZ);
+      } else if (r.dirZ < 0 && p.group.position.z <= r.minZ) {
+        r.dirZ = 1;
+        p.group.rotation.y = Math.atan2(r.dirX, r.dirZ);
       }
     }
   }

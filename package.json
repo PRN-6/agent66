@@ -9,9 +9,11 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "vite": "^8.3.6"
+    "@rollup/wasm-node": "^4.68.2",
+    "vite": "^6.1.1"
   },
   "dependencies": {
-    "three": "^0.187.0"
+    "three": "^0.187.0",
+    "yuka": "^0.7.8"
   }
 }

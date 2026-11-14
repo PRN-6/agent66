@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 import { getTerrainHeight } from '../utils/math.js';
-import { resolveCircleCollision } from '../utils/collision.js';
+import { resolveCircleCollision, resolveEntityCollision } from '../utils/collision.js';
 
 export class RealmNPCs {
-  constructor(scene, dayNightCycle) {
+  constructor(scene, dayNightCycle, gameApp = null) {
     this.scene = scene;
     this.dayNightCycle = dayNightCycle;
+    this.gameApp = gameApp;
     this.npcs = [];
     this.colliders = [];
     this.worldColliders = [];
@@ -39,7 +40,10 @@ export class RealmNPCs {
       dwarfBeardWhite: new THREE.MeshLambertMaterial({ color: 0xd4d4d8, flatShading: true }),
       dwarfBeardBrown: new THREE.MeshLambertMaterial({ color: 0x92400e, flatShading: true }),
       clothWhite: new THREE.MeshLambertMaterial({ color: 0xf8fafc, flatShading: true }),
-      manaCyan: new THREE.MeshLambertMaterial({ color: 0x06b6d4, emissive: 0x0284c7, flatShading: true })
+      manaCyan: new THREE.MeshLambertMaterial({ color: 0x06b6d4, emissive: 0x0284c7, flatShading: true }),
+      burgundy: new THREE.MeshLambertMaterial({ color: 0x831843, flatShading: true }),
+      emerald: new THREE.MeshLambertMaterial({ color: 0x065f46, flatShading: true }),
+      rosePink: new THREE.MeshLambertMaterial({ color: 0xf43f5e, flatShading: true })
     };
 
     this.initNPCs();
@@ -136,6 +140,134 @@ export class RealmNPCs {
           "Dwarves are mechanical geniuses, but bargaining with them is like trying to haggle with a granite boulder.",
           "The Elves look down their noses at our market stalls, calling our coins 'crude mortal metal'. But human coin feeds the realm!",
           "Keep your coin-purse close! Between demon raiders and greedy neighbors, a merchant has to be sharper than a razor."
+        ]
+      },
+
+      /* High Valoria Castle Town Citizens */
+      {
+        id: 'human_lord_brandon',
+        name: 'Lord Brandon of House Valen',
+        badge: '👑 High Chancellor of Valoria',
+        title: 'Lord of the High Court & Royal Treasury',
+        race: 'human',
+        age: 52,
+        lifespan: '75 – 100 Years',
+        color: '#f59e0b',
+        x: 366,
+        z: -270,
+        role: 'salute',
+        tunicMat: this.mats.burgundy,
+        itemType: 'scroll',
+        dialogues: [
+          "Welcome to High Valoria! Here at the foot of King Reginald's citadel, mortal civilization shines at its finest.",
+          "The Elves mock our short lifespans, but in eighty years a human accomplishes what takes an elf three millennia of singing to twigs!",
+          "The Royal Treasury stands secure behind three-ton vault doors. Neither dwarven greed nor demon malice shall plunder our coin.",
+          "King Reginald keeps our borders resolute. Keep your weapon sheathed within the borough walls, traveller."
+        ]
+      },
+      {
+        id: 'human_lady_genevieve',
+        name: 'Lady Genevieve',
+        badge: '🌹 High Court Dame',
+        title: 'Patroness of the Sunken Rose Sanctuary',
+        race: 'human',
+        age: 29,
+        lifespan: '75 – 100 Years',
+        color: '#ec4899',
+        x: 374,
+        z: -284,
+        role: 'greeting',
+        tunicMat: this.mats.emerald,
+        itemType: 'flowers',
+        dialogues: [
+          "Aren't the cherry blossoms exquisite this season? Even the haughty elven dignitaries paused to admire our sunken gardens.",
+          "The Great Lion Fountain was sculpted from white marble quarried in the high peaks. Its crystal waters never run dry.",
+          "High Valoria is the pride of the four realms. We may not have eternal life, but we know how to savor every fragrant petal while it blooms!",
+          "Princess Aurelia often rides her palfrey down from the East Pavilion to join us for afternoon rose tea."
+        ]
+      },
+      {
+        id: 'human_clockmaker_corvus',
+        name: 'Master Corvus',
+        badge: '⚙️ Master Horologist',
+        title: 'Keeper of the Great Town Clocktower',
+        race: 'human',
+        age: 56,
+        lifespan: '75 – 100 Years',
+        color: '#f59e0b',
+        x: 346,
+        z: -248,
+        role: 'inspecting',
+        tunicMat: this.mats.dwarfAmber,
+        itemType: 'clock_gear',
+        dialogues: [
+          "Tick, tock, tick, tock! That giant twenty-six-meter tower is the heartbeat of High Valoria!",
+          "The Dwarves think they own all mechanical technology! Ha! I calibrated these four brass clock faces to within half a second a month!",
+          "Human engineering is adaptable and bold. We didn't need four centuries in a dark cave to master interlocking gear ratios!",
+          "When the bronze bell tolls the noon hour, its resonance echoes across the entire Valorian valley."
+        ]
+      },
+      {
+        id: 'human_alchemist_zephyr',
+        name: 'Alchemist Zephyr',
+        badge: '🔮 Chief Royal Alchemist',
+        title: 'Dean of the Valorian Magic Conservatory',
+        race: 'human',
+        age: 44,
+        lifespan: '75 – 100 Years',
+        color: '#a855f7',
+        x: 410,
+        z: -275,
+        role: 'brewing',
+        tunicMat: this.mats.purpleNether,
+        itemType: 'potion',
+        dialogues: [
+          "Careful near the conservatory greenhouse! Those floating mana crystals are attuned to celestial ley lines.",
+          "The Elves claim magic belongs exclusively to their starlight heritage. Absolute nonsense! Human alchemy has unlocked potent new tinctures.",
+          "Our rooftop brass telescope tracks comet orbits. If the Demon King attempts to invoke a Blood Moon, we will see it hours in advance.",
+          "Looking for an invigorating elixir? Step inside—just don't mix the sulfur flask with the dew-lily extract!"
+        ]
+      },
+      {
+        id: 'human_florist_helena',
+        name: 'Helena the Flower Maiden',
+        badge: '🌸 Royal Flower Maiden',
+        title: 'Proprietress of the Citadel Floral Pavilion',
+        race: 'human',
+        age: 22,
+        lifespan: '75 – 100 Years',
+        color: '#f43f5e',
+        x: 362,
+        z: -216,
+        role: 'bartering',
+        tunicMat: this.mats.rosePink,
+        itemType: 'flowers',
+        dialogues: [
+          "Fresh morning roses, fragrant mountain lavender, and golden sun-orchids grown right under the castle walls!",
+          "Soldiers marching back from the borders always stop by for a bouquet to bring home to their sweethearts.",
+          "The soil here in High Valoria is blessed by the Great River. Even during winter frosts, our greenhouse keeps the petals vibrant.",
+          "Here, take a sprig of mountain lavender—they say it keeps vile demon night-whispers away!"
+        ]
+      },
+      {
+        id: 'human_town_crier_silas',
+        name: 'Town Crier Silas',
+        badge: '📢 High Town Crier',
+        title: 'Herald of Royal Decrees & Proclamations',
+        race: 'human',
+        age: 35,
+        lifespan: '75 – 100 Years',
+        color: '#3b82f6',
+        x: 376,
+        z: -242,
+        role: 'proclaiming',
+        tunicMat: this.mats.blueRoyal,
+        itemType: 'bell_scroll',
+        dialogues: [
+          "Hear ye, hear ye! By royal decree of King Reginald, peace and prosperity reign across High Valoria!",
+          "All merchants must register their coin weights at the Royal Bank! Fair measures ensure honest trade for all mortal folk!",
+          "Notice to travelers: wild beasts and monsters are strictly barred by the sacred boundary wards! You are safe within our gates!",
+          "Citizens are invited to the Silver Stag Inn this evening for the seasonal tapping of the spiced autumn vineyard vintage!"
         ]
       },
 
@@ -416,15 +548,6 @@ export class RealmNPCs {
 
       this.scene.add(group);
 
-      // Dynamic cylinder collider that moves with the NPC
-      const dynCollider = {
-        type: 'cylinder',
-        x: data.x,
-        z: data.z,
-        radius: 0.65
-      };
-      this.colliders.push(dynCollider);
-
       this.npcs.push({
         config: {
           id: data.id,
@@ -445,7 +568,7 @@ export class RealmNPCs {
         worldPos: new THREE.Vector3(data.x, y, data.z),
         spawnPos: new THREE.Vector3(data.x, y, data.z),
         targetPos: new THREE.Vector3(data.x, y, data.z),
-        collider: dynCollider,
+        radius: 0.65,
         state: 'idle',
         stateTimer: 1.5 + Math.random() * 3.0,
         walkSpeed: 2.2,
@@ -703,6 +826,23 @@ export class RealmNPCs {
       const chisel = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.5, 0.08), this.mats.iron);
       chisel.position.set(0.35, 0, 0.25);
       itemGroup.add(chisel);
+    } else if (data.itemType === 'flowers') {
+      const bouquet = new THREE.Mesh(new THREE.DodecahedronGeometry(0.24, 0), this.mats.rosePink);
+      bouquet.position.set(0.35, 0.05, 0.28);
+      itemGroup.add(bouquet);
+    } else if (data.itemType === 'clock_gear') {
+      const gear = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.08, 8), this.mats.gold);
+      gear.rotation.x = Math.PI / 2;
+      gear.position.set(0.35, 0, 0.28);
+      itemGroup.add(gear);
+    } else if (data.itemType === 'potion') {
+      const bottle = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 0.4, 6), this.mats.manaCyan);
+      bottle.position.set(0.35, 0, 0.28);
+      itemGroup.add(bottle);
+    } else if (data.itemType === 'bell_scroll') {
+      const bell = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.3, 6), this.mats.gold);
+      bell.position.set(0.35, 0.1, 0.28);
+      itemGroup.add(bell);
     }
 
     torso.add(itemGroup);
@@ -763,10 +903,6 @@ export class RealmNPCs {
     this.npcs.forEach(npc => {
       // Keep worldPos in sync with 3D group position
       npc.worldPos.copy(npc.group.position);
-      if (npc.collider) {
-        npc.collider.x = npc.group.position.x;
-        npc.collider.z = npc.group.position.z;
-      }
 
       const distToPlayer = Math.hypot(playerPos.x - npc.group.position.x, playerPos.z - npc.group.position.z);
       const isPlayerNear = distToPlayer < minDist;
@@ -795,6 +931,11 @@ export class RealmNPCs {
 
       } else {
         npc.isInteracting = false;
+
+        // Dispatch high-level brain intentions if brain is attached
+        if (npc.brain) {
+          npc.brain.dispatchAction(delta, npc, this.gameApp);
+        }
 
         // Autonomous Patrol / Stroll State Machine
         if (npc.state === 'idle') {
@@ -893,6 +1034,12 @@ export class RealmNPCs {
             if (this.worldColliders && this.worldColliders.length > 0) {
               resolveCircleCollision(npc.group.position, 0.5, this.worldColliders, 2);
             }
+
+            // Resolve collision with player and adjacent NPCs
+            if (playerPos) {
+              resolveEntityCollision(npc.group.position, 0.5, [{ position: playerPos }], 0.55);
+            }
+            resolveEntityCollision(npc.group.position, 0.5, this.npcs, 0.5);
 
             // Ground cleanly on terrain
             npc.group.position.y = getTerrainHeight(npc.group.position.x, npc.group.position.z);

@@ -56,6 +56,7 @@ export class Minimap {
       else if (pt.id === 'demon_enclave') icon = '💀';
       else if (pt.id === 'elven_glade') icon = '🌙';
       else if (pt.id === 'dwarf_clanstead') icon = '🛡️';
+      else if (pt.id.includes('high_valoria')) icon = '🏛️';
       else if (pt.id.includes('princess')) icon = '👑';
       else if (pt.id.includes('jungle')) icon = '⛺';
       else if (pt.id.includes('citadel') || pt.id.includes('bastion')) icon = '🏰';
@@ -272,6 +273,17 @@ export class Minimap {
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
+    // High Valoria Castle Town Radar Dot
+    const valoriaRadarX = cx + (370 - playerPos.x) * scale;
+    const valoriaRadarZ = cy + (-250 - playerPos.z) * scale;
+    ctx.fillStyle = '#60a5fa';
+    ctx.beginPath();
+    ctx.arc(valoriaRadarX, valoriaRadarZ, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
     // Player arrow in center
     ctx.save();
     ctx.translate(cx, cy);
@@ -348,6 +360,15 @@ export class Minimap {
     ctx.beginPath();
     ctx.arc(w * 0.74, h * 0.26, 48, 0, Math.PI * 2);
     ctx.fill();
+
+    // High Valoria Castle Town
+    ctx.fillStyle = 'rgba(96, 165, 250, 0.45)';
+    ctx.beginPath();
+    ctx.arc(((370 + HALF_WORLD) / WORLD_SIZE) * w, ((-250 + HALF_WORLD) / WORLD_SIZE) * h, 24, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#60a5fa';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
 
     // Dwarven Mountain Bastion & Foundries
     ctx.fillStyle = '#78350f';

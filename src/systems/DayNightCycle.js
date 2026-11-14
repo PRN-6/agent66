@@ -13,8 +13,8 @@ export class DayNightCycle {
 
     this.sunLight = new THREE.DirectionalLight(0xfffaed, 1.2);
     this.sunLight.castShadow = true;
-    this.sunLight.shadow.mapSize.width = 2048;
-    this.sunLight.shadow.mapSize.height = 2048;
+    this.sunLight.shadow.mapSize.width = 1024;
+    this.sunLight.shadow.mapSize.height = 1024;
     this.sunLight.shadow.camera.near = 10;
     this.sunLight.shadow.camera.far = 600;
     const shadowD = 120;
@@ -94,6 +94,46 @@ export class DayNightCycle {
     return `${pad(displayHours)}:${pad(minutes)} ${ampm}`;
   }
 
+  getFormattedTime() {
+    return this.getTimeFormatted();
+  }
+
+  get time() {
+    return this.timeOfDay;
+  }
+
+  exportState() {
+    return {
+      timeOfDay: this.timeOfDay,
+      isPaused: this.isPaused
+    };
+  }
+
+  importState(data) {
+    if (!data) return;
+    if (typeof data.timeOfDay === 'number') {
+      this.setTime(data.timeOfDay);
+    }
+    if (typeof data.isPaused === 'boolean') {
+      this.isPaused = data.isPaused;
+    }
+  }
+
+  simulateOfflineTime(elapsedSeconds) {
+    // Each full 24h day/night cycle takes (1.0 / this.speed) seconds (~250s)
+    const cycleDuration = 1.0 / Math.max(0.0001, this.speed);
+    const cyclesPassed = elapsedSeconds / cycleDuration;
+    const daysPassed = Math.floor(cyclesPassed);
+    const addedTime = (elapsedSeconds * this.speed) % 1.0;
+    this.timeOfDay = (this.timeOfDay + addedTime) % 1.0;
+
+    return {
+      cyclesPassed: Math.max(1, Math.round(cyclesPassed)),
+      daysPassed: daysPassed,
+      timeFormatted: this.getTimeFormatted()
+    };
+  }
+
   update(delta, targetPos) {
     if (!this.isPaused) {
       this.timeOfDay = (this.timeOfDay + delta * this.speed) % 1.0;
@@ -171,12 +211,30 @@ export class DayNightCycle {
     }
     this.scene.background = skyColor;
 
-    // Toggle city lights, street lamps, interior lights
+    // Toggle city lights, street lamps, interior lights (distance & daytime culled)
     const nightFactor = THREE.MathUtils.clamp((0.1 - sunHeight) * 3, 0, 1);
+    const isNightActive = (nightFactor > 0.02);
+    const focusX = focus.x;
+    const focusZ = focus.z;
+
     for (let i = 0; i < this.nightLights.length; i++) {
       const item = this.nightLights[i];
       if (item.isLight) {
-        item.intensity = item.userData.baseIntensity * nightFactor;
+        if (!isNightActive) {
+          item.visible = false;
+        } else {
+          // Distance culling: only keep lights within 95m of focus active
+          const lx = item.parent ? item.parent.position.x : item.position.x;
+          const lz = item.parent ? item.parent.position.z : item.position.z;
+          const dx = lx - focusX;
+          const dz = lz - focusZ;
+          if (dx * dx + dz * dz < 9025) { // < 95m
+            item.visible = true;
+            item.intensity = item.userData.baseIntensity * nightFactor;
+          } else {
+            item.visible = false;
+          }
+        }
       } else if (item.isMaterial) {
         if (item.emissive) {
           item.emissiveIntensity = (item.userData.baseEmissive || 1.0) * nightFactor;

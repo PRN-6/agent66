@@ -378,9 +378,12 @@ export class MagicSwordSystem {
       if (p.hitMonsters.has(m)) continue; // Already hit by this wave
 
       const mPos = m.group.position;
+      const maxR = p.hitRadius + 1.2;
+      if (Math.abs(mPos.x - wavePos.x) > maxR || Math.abs(mPos.z - wavePos.z) > maxR) continue;
+
       const dist = Math.hypot(mPos.x - wavePos.x, mPos.z - wavePos.z);
 
-      if (dist <= p.hitRadius + 1.2) {
+      if (dist <= maxR) {
         p.hitMonsters.add(m);
         this.applyMonsterDamage(m, p, false);
       }
@@ -399,9 +402,12 @@ export class MagicSwordSystem {
       if (p.hitMonsters.has(m)) continue;
 
       const mPos = m.group.position;
+      const maxR = p.radius + 1.2;
+      if (Math.abs(mPos.x - center.x) > maxR || Math.abs(mPos.z - center.z) > maxR) continue;
+
       const dist = Math.hypot(mPos.x - center.x, mPos.z - center.z);
 
-      if (dist <= p.radius + 1.2) {
+      if (dist <= maxR) {
         p.hitMonsters.add(m);
         this.applyMonsterDamage(m, p, true);
       }
@@ -450,6 +456,15 @@ export class MagicSwordSystem {
     if (monster.currentHp <= 0) {
       const charName = p.player.getCharacterConfig()?.name || 'Hero';
       this.monsterManager.killMonster(monster, `${charName}'s ${p.swordCfg.name}`);
+
+      // Notify Pip Task System for hunting quests
+      if (window.__pipTaskSystem) {
+        window.__pipTaskSystem.onMonsterKilled(monster);
+      }
+      // Notify Elven Task System for hunting quests
+      if (window.__elvenTaskSystem) {
+        window.__elvenTaskSystem.onMonsterKilled(monster);
+      }
 
       if (monster.xpValue > 0) {
         p.player.gainXP(monster.xpValue, (newLevel) => {

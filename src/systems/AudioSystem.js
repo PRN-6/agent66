@@ -139,6 +139,33 @@ export class AudioSystem {
     });
   }
 
+  // Melodic crystal chime for UI announcements, task completions, decrees, and autonomous thoughts
+  playChime() {
+    if (this.isMuted) return;
+    try {
+      this.ensureContext();
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      [587.33, 880.0, 1174.66].forEach((freq, idx) => { // D5, A5, D6 harmonic chime
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, t + idx * 0.05);
+
+        gain.gain.setValueAtTime(0.10, t + idx * 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.05 + 0.32);
+
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+
+        osc.start(t + idx * 0.05);
+        osc.stop(t + idx * 0.05 + 0.35);
+      });
+    } catch (e) {
+      // Audio autoplay policy catch
+    }
+  }
+
   // Royal heraldic brass trumpet fanfare
   playWarHorn() {
     if (this.isMuted || !this.ctx) return;
@@ -322,6 +349,87 @@ export class AudioSystem {
     gain.connect(this.masterGain);
     osc.start(t);
     osc.stop(t + 0.18);
+  }
+
+  // Draconic bellow / earth-shattering mythical dragon roar
+  playDragonRoar() {
+    if (this.isMuted || !this.ctx) return;
+    this.ensureContext();
+    const t = this.ctx.currentTime;
+
+    // Guttural sub-bass rumble
+    const osc1 = this.ctx.createOscillator();
+    const gain1 = this.ctx.createGain();
+    osc1.type = 'sawtooth';
+    osc1.frequency.setValueAtTime(120, t);
+    osc1.frequency.linearRampToValueAtTime(145, t + 0.3);
+    osc1.frequency.exponentialRampToValueAtTime(40, t + 1.2);
+
+    gain1.gain.setValueAtTime(0.35, t);
+    gain1.gain.linearRampToValueAtTime(0.45, t + 0.35);
+    gain1.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+
+    osc1.connect(gain1);
+    gain1.connect(this.masterGain);
+    osc1.start(t);
+    osc1.stop(t + 1.25);
+
+    // High shrieking draconic overtone
+    const osc2 = this.ctx.createOscillator();
+    const gain2 = this.ctx.createGain();
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(260, t);
+    osc2.frequency.exponentialRampToValueAtTime(90, t + 0.9);
+
+    gain2.gain.setValueAtTime(0.18, t);
+    gain2.gain.linearRampToValueAtTime(0.001, t + 0.9);
+
+    osc2.connect(gain2);
+    gain2.connect(this.masterGain);
+    osc2.start(t);
+    osc2.stop(t + 0.95);
+  }
+
+  // Fiery / Frost dragon breath cone blast
+  playDragonBreath() {
+    if (this.isMuted || !this.ctx) return;
+    this.ensureContext();
+    const t = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(180, t);
+    osc.frequency.linearRampToValueAtTime(95, t + 0.6);
+
+    gain.gain.setValueAtTime(0.25, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.65);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.7);
+  }
+
+  // Heavy leathery wingbeat flap
+  playDragonWingFlap() {
+    if (this.isMuted || !this.ctx) return;
+    this.ensureContext();
+    const t = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(85, t);
+    osc.frequency.exponentialRampToValueAtTime(35, t + 0.28);
+
+    gain.gain.setValueAtTime(0.28, t);
+    gain.gain.linearRampToValueAtTime(0.001, t + 0.3);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.32);
   }
 }
 

@@ -1,11 +1,14 @@
 import * as THREE from 'three';
 import { getTerrainHeight } from '../utils/math.js';
+import { resolveCircleCollision, resolveEntityCollision } from '../utils/collision.js';
 
 export class VillageSettlement {
-  constructor(scene, dayNightCycle) {
+  constructor(scene, dayNightCycle, gameApp = null) {
     this.scene = scene;
     this.dayNightCycle = dayNightCycle;
+    this.gameApp = gameApp;
     this.colliders = [];
+    this.worldColliders = [];
     this.villagers = [];
     this.animatedObjects = [];
     this.currentNearbyVillager = null;
@@ -53,6 +56,10 @@ export class VillageSettlement {
     this.initElvenGlade();
     this.initDwarfUnion();
     this.initVillagerNPCs();
+  }
+
+  setColliders(colliders) {
+    this.worldColliders = colliders || [];
   }
 
   /* -------------------------------------------------------------------------
@@ -2116,22 +2123,23 @@ export class VillageSettlement {
         animNodes: animNodes,
         baseY: y,
         worldPos: new THREE.Vector3(vd.x, y, vd.z),
+        spawnPos: new THREE.Vector3(vd.x, y, vd.z),
+        targetPos: new THREE.Vector3(vd.x, y, vd.z),
+        radius: 0.65,
+        state: 'idle',
+        stateTimer: 1.5 + Math.random() * 3.0,
+        walkSpeed: 1.8 + Math.random() * 0.5,
+        wanderRadius: 9.0,
+        walkCycle: Math.random() * Math.PI * 2,
+        isInteracting: false,
         role: vd.role
-      });
-
-      // Villager cylinder collider (stops player from walking directly through)
-      this.colliders.push({
-        type: 'cylinder',
-        x: vd.x,
-        z: vd.z,
-        radius: 0.75
       });
     });
   }
 
   buildVillagerModel(vd) {
     const root = new THREE.Group();
-    const anim = { torso: null, head: null, armL: null, armR: null, tool: null };
+    const anim = { torso: null, head: null, armL: null, armR: null, legL: null, legR: null, tool: null };
 
     const isDwarf = (vd.race === 'dwarf');
     const isDemon = (vd.race === 'demon');
@@ -2253,19 +2261,26 @@ export class VillageSettlement {
       head.add(coif);
     }
 
-    // Legs & Boots
+    // Legs & Boots (Pivoted at hip for natural walking limb swing)
     const legH = isDwarf ? 0.45 : 0.55;
-    const legY = isDwarf ? 0.5 : 0.65;
-    [-0.2, 0.2].forEach(lx => {
+    const legY = isDwarf ? 0.48 : 0.62;
+    [-0.2, 0.2].forEach((lx, idx) => {
+      const legPivot = new THREE.Group();
+      legPivot.position.set(lx, legY + legH / 2, 0);
+
       const leg = new THREE.Mesh(new THREE.BoxGeometry(0.28, legH, 0.32), pantsMat);
-      leg.position.set(lx, legY, 0);
+      leg.position.set(0, -legH / 2, 0);
       leg.castShadow = true;
-      root.add(leg);
+      legPivot.add(leg);
 
       const boot = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.32, 0.42), bootsMat);
-      boot.position.set(lx, 0.16, 0.05);
+      boot.position.set(0, -legH + 0.16, 0.05);
       boot.castShadow = true;
-      root.add(boot);
+      legPivot.add(boot);
+
+      root.add(legPivot);
+      if (idx === 0) anim.legL = legPivot;
+      else anim.legR = legPivot;
     });
 
     // Arms & Hands
@@ -2419,41 +2434,144 @@ export class VillageSettlement {
     let nearest = null;
     let minDist = 4.5; // Interaction trigger radius
 
-    // 2. Animate villagers and track nearest for dialogue
+    // 2. Animate villagers, process autonomous stroll/patrol & track nearest for dialogue
     this.villagers.forEach(v => {
-      // Idle & role animations
-      if (v.animNodes.torso) {
-        if (v.role === 'tilling' || v.role === 'raking') {
-          v.animNodes.torso.position.y = (v.animNodes.torso.position.y || 1.25);
-          v.animNodes.torso.rotation.x = 0.15 + Math.sin(time * 2.2) * 0.12;
-        } else if (v.role === 'smithing') {
-          // Hammering anvil stroke
-          if (v.animNodes.armR) {
-            v.animNodes.armR.rotation.x = -0.4 + Math.sin(time * 4.0) * 0.55;
-          }
-        } else if (v.role === 'drinking') {
-          // Raising tankard to mouth
-          if (v.animNodes.armR) {
-            v.animNodes.armR.rotation.x = -0.6 + Math.sin(time * 1.5) * 0.3;
-          }
-        } else if (v.role === 'playing_lyre') {
-          if (v.animNodes.armR) {
-            v.animNodes.armR.position.x = 0.48 + Math.sin(time * 2.5) * 0.05;
-          }
-        } else {
-          v.animNodes.torso.rotation.x = 0;
-        }
-      }
+      // Sync worldPos with 3D group position
+      v.worldPos.copy(v.group.position);
 
-      // Check distance to player
-      const dist = Math.hypot(playerPos.x - v.worldPos.x, playerPos.z - v.worldPos.z);
-      if (dist < minDist) {
-        minDist = dist;
+      const distToPlayer = Math.hypot(playerPos.x - v.group.position.x, playerPos.z - v.group.position.z);
+      const isPlayerNear = distToPlayer < minDist;
+
+      if (isPlayerNear) {
+        minDist = distToPlayer;
         nearest = v.config;
+        v.isInteracting = true;
 
         // Turn settler smoothly to face player when nearby
-        const targetAngle = Math.atan2(playerPos.x - v.worldPos.x, playerPos.z - v.worldPos.z);
-        v.group.rotation.y = targetAngle;
+        const targetAngle = Math.atan2(playerPos.x - v.group.position.x, playerPos.z - v.group.position.z);
+        let diff = targetAngle - v.group.rotation.y;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        v.group.rotation.y += diff * Math.min(1.0, delta * 8.0);
+
+        // Ease legs to rest
+        if (v.animNodes.legL) v.animNodes.legL.rotation.x = THREE.MathUtils.lerp(v.animNodes.legL.rotation.x, 0, delta * 8.0);
+        if (v.animNodes.legR) v.animNodes.legR.rotation.x = THREE.MathUtils.lerp(v.animNodes.legR.rotation.x, 0, delta * 8.0);
+
+        // Friendly role posture when greeting
+        if (v.role === 'drinking' && v.animNodes.armR) {
+          v.animNodes.armR.rotation.x = -0.6 + Math.sin(time * 1.5) * 0.2;
+        } else if (v.role === 'playing_lyre' && v.animNodes.armR) {
+          v.animNodes.armR.position.x = 0.48 + Math.sin(time * 2.5) * 0.05;
+        }
+      } else {
+        v.isInteracting = false;
+
+        // Dispatch high-level brain intentions if brain is attached
+        if (v.brain) {
+          v.brain.dispatchAction(delta, v, this.gameApp);
+        }
+
+        // Autonomous Patrol / Stroll State Machine
+        if (v.state === 'idle') {
+          v.stateTimer -= delta;
+
+          // Idle & role animations
+          if (v.animNodes.torso) {
+            const isDwarf = (v.config.race === 'dwarf');
+            if (v.role === 'tilling' || v.role === 'raking') {
+              v.animNodes.torso.position.y = (isDwarf ? 1.05 : 1.25);
+              v.animNodes.torso.rotation.x = 0.15 + Math.sin(time * 2.2) * 0.12;
+            } else if (v.role === 'smithing') {
+              if (v.animNodes.armR) {
+                v.animNodes.armR.rotation.x = -0.4 + Math.sin(time * 4.0) * 0.55;
+              }
+            } else if (v.role === 'drinking') {
+              if (v.animNodes.armR) {
+                v.animNodes.armR.rotation.x = -0.6 + Math.sin(time * 1.5) * 0.3;
+              }
+            } else if (v.role === 'playing_lyre') {
+              if (v.animNodes.armR) {
+                v.animNodes.armR.position.x = 0.48 + Math.sin(time * 2.5) * 0.05;
+              }
+            } else {
+              v.animNodes.torso.rotation.x = 0;
+            }
+          }
+
+          // Ease legs to rest
+          if (v.animNodes.legL) v.animNodes.legL.rotation.x = THREE.MathUtils.lerp(v.animNodes.legL.rotation.x, 0, delta * 6.0);
+          if (v.animNodes.legR) v.animNodes.legR.rotation.x = THREE.MathUtils.lerp(v.animNodes.legR.rotation.x, 0, delta * 6.0);
+
+          if (v.stateTimer <= 0) {
+            // Determine next patrol / wander destination within wanderRadius
+            const angle = Math.random() * Math.PI * 2;
+            const r = 2.5 + Math.random() * (v.wanderRadius - 2.5);
+            const tx = v.spawnPos.x + Math.cos(angle) * r;
+            const tz = v.spawnPos.z + Math.sin(angle) * r;
+            const ty = getTerrainHeight(tx, tz);
+
+            v.targetPos.set(tx, ty, tz);
+            v.state = 'walking';
+            v.stateTimer = 8.0;
+          }
+
+        } else if (v.state === 'walking') {
+          v.stateTimer -= delta;
+
+          const dx = v.targetPos.x - v.group.position.x;
+          const dz = v.targetPos.z - v.group.position.z;
+          const dist = Math.hypot(dx, dz);
+
+          if (dist < 0.5 || v.stateTimer <= 0) {
+            // Reached destination, pause and tend to work
+            v.state = 'idle';
+            v.stateTimer = 3.0 + Math.random() * 5.0;
+          } else {
+            // Turn smoothly toward movement direction
+            const moveAngle = Math.atan2(dx, dz);
+            let diff = moveAngle - v.group.rotation.y;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            v.group.rotation.y += diff * Math.min(1.0, delta * 7.0);
+
+            // Step forward
+            const step = Math.min(dist, v.walkSpeed * delta);
+            v.group.position.x += (dx / dist) * step;
+            v.group.position.z += (dz / dist) * step;
+
+            // Resolve collision with world geometry
+            if (this.worldColliders && this.worldColliders.length > 0) {
+              resolveCircleCollision(v.group.position, 0.5, this.worldColliders, 2);
+            }
+
+            // Resolve collision with player and adjacent villagers
+            if (playerPos) {
+              resolveEntityCollision(v.group.position, 0.5, [{ position: playerPos }], 0.55);
+            }
+            resolveEntityCollision(v.group.position, 0.5, this.villagers, 0.5);
+
+            // Ground cleanly on terrain
+            v.group.position.y = getTerrainHeight(v.group.position.x, v.group.position.z);
+            v.worldPos.copy(v.group.position);
+
+            // Natural limb swinging cadence
+            v.walkCycle += delta * (v.walkSpeed * 2.8);
+            const swing = Math.sin(v.walkCycle) * 0.42;
+
+            if (v.animNodes.legL) v.animNodes.legL.rotation.x = -swing;
+            if (v.animNodes.legR) v.animNodes.legR.rotation.x = swing;
+            if (v.animNodes.armL) v.animNodes.armL.rotation.x = swing;
+            if (v.animNodes.armR && v.role !== 'harvesting' && v.role !== 'playing_lyre') {
+              v.animNodes.armR.rotation.x = -swing;
+            }
+
+            const isDwarf = (v.config.race === 'dwarf');
+            if (v.animNodes.torso) {
+              v.animNodes.torso.position.y = (isDwarf ? 1.05 : 1.25) + Math.abs(Math.sin(v.walkCycle)) * 0.05;
+            }
+          }
+        }
       }
     });
 

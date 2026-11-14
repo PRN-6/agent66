@@ -1,0 +1,17 @@
+{
+  "name": "Agent66: Low-Poly Medieval Kingdom RPG",
+  "short_name": "Agent66",
+  "description": "Living Low-Poly Medieval Kingdom Open World RPG with autonomous AI minds and persistent state.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e17",
+  "theme_color": "#0ea5e9",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
+

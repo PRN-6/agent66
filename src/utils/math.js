@@ -41,6 +41,7 @@ export function distToSegment(px, pz, x1, z1, x2, z2) {
 export const LEVEL_PADS = [
   // Human Kingdom (North-East) - Relocated to grand domain far from other territories
   { x: 380, z: -380, r: 80, margin: 30 }, // Royal Castle Citadel & Keep Courtyard
+  { x: 370, z: -250, r: 68, margin: 25 }, // High Valoria Castle Town & Royal Promenade
   { x: 205, z: -85, r: 48, margin: 20 },  // Town Market Square & Dragon's Rest Tavern
   { x: 95, z: 10, r: 45, margin: 20 },    // Oakhaven Agricultural Hamlet & Farmlands
   { x: 60, z: -60, r: 25, margin: 15 },   // Windmill & Miller's Cottage
@@ -73,7 +74,9 @@ export const IMPERIAL_ROADS = [
   { x1: 95, z1: 10, x2: 145, z2: -35 },
   { x1: 145, z1: -35, x2: 205, z2: -60 },
   { x1: 205, z1: -60, x2: 290, z2: -190 },
-  { x1: 290, z1: -190, x2: 380, z2: -325 },
+  { x1: 290, z1: -190, x2: 370, z2: -250 }, // High Valoria South Avenue
+  { x1: 370, z1: -250, x2: 380, z2: -325 }, // High Valoria Grand Promenade to Castle Gate
+  { x1: 320, z1: -250, x2: 430, z2: -250 }, // High Valoria East-West Artisan Boulevard
   { x1: 380, z1: -325, x2: 470, z2: -365 }, // Road branch to Princess Aurelia's Royal Gardens
   // 2. Iron Mountain Trail (South-East: Crossroads -> Karak-Vorn -> Bastion)
   { x1: 0, z1: 10, x2: 45, z2: 65 },

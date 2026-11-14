@@ -11,20 +11,21 @@ export const CAMERA_MODES = {
 export const FAST_TRAVEL_POINTS = [
   { id: 'crossroads', name: 'Crossroads Sanctuary Bridge', x: 0, z: 10, biome: 'Crossroads', desc: 'Ancient stone bridge connecting all 4 realm territories' },
   { id: 'royal_citadel', name: 'Royal Castle & Citadel (Humans)', x: 380, z: -325, biome: 'Human Kingdom', desc: 'Grand outer curtain walls and throne fortress of King Reginald' },
-  { id: 'princess_pavilion', name: 'Princess Aurelia’s Sun Pavilion', x: 470, z: -365, biome: 'Human Kingdom', desc: 'Graceful royal estate and gardens of Crown Princess Aurelia' },
-  { id: 'tavern', name: 'The Dragon’s Rest Tavern (Humans)', x: 205, z: -85, biome: 'Human Kingdom', desc: 'Lively medieval tavern and adventurer guild with ale casks and bounties' },
-  { id: 'demon_citadel', name: 'Colossal Obsidian Dread Citadel (Demons)', x: -220, z: -160, biome: 'Demon Territory', desc: 'Colossal nether fortress crowned in 45m demon horns, magma moat, and seat of Demon King Malakor' },
-  { id: 'demon_altar', name: 'Void Sacrificial Altar (Demons)', x: -270, z: -250, biome: 'Demon Territory', desc: 'Stepped dark stone dais with floating purple Nether Crystal' },
-  { id: 'elven_sanctuary', name: 'Moon Spire Sanctuary (Elves)', x: -200, z: 200, biome: 'Elven Forest', desc: 'Graceful marble colonnades and floating Celestial Moon Orb' },
+  { id: 'high_valoria_town', name: 'High Valoria Castle Town (Humans)', x: 356, z: -248, biome: 'Human Kingdom', desc: 'The magnificent capital high town outside King Reginald’s Citadel with grand fountain, clocktower, artisan guilds, and flower markets' },
+  { id: 'princess_pavilion', name: 'Princess Aurelia’s Sun Pavilion', x: 470, z: -352, biome: 'Human Kingdom', desc: 'Graceful royal estate and gardens of Crown Princess Aurelia' },
+  { id: 'tavern', name: 'The Dragon’s Rest Tavern (Humans)', x: 205, z: -74, biome: 'Human Kingdom', desc: 'Lively medieval tavern and adventurer guild with ale casks and bounties' },
+  { id: 'demon_citadel', name: 'Colossal Obsidian Dread Citadel (Demons)', x: -220, z: -145, biome: 'Demon Territory', desc: 'Colossal nether fortress crowned in 45m demon horns, magma moat, and seat of Demon King Malakor' },
+  { id: 'demon_altar', name: 'Void Sacrificial Altar (Demons)', x: -270, z: -238, biome: 'Demon Territory', desc: 'Stepped dark stone dais with floating purple Nether Crystal' },
+  { id: 'elven_sanctuary', name: 'Moon Spire Sanctuary (Elves)', x: -200, z: 185, biome: 'Elven Forest', desc: 'Graceful marble colonnades and floating Celestial Moon Orb' },
   { id: 'elven_archery', name: 'Whispering Archery Grove (Elves)', x: -110, z: 150, biome: 'Elven Forest', desc: 'Target range nestled among colossal ancient elder trees' },
   { id: 'jungle_outpost', name: 'Wild Jungle Research Outpost (Elves)', x: -260, z: 120, biome: 'Elven Forest', desc: 'Elevated bamboo stilt treehouse in the lush deep jungle canopy' },
-  { id: 'dwarf_bastion', name: 'Karak-Drak Mountain Bastion (Dwarves)', x: 200, z: 200, biome: 'Dwarf Industry', desc: 'Massive heavy stone fortress flanked by colossal dwarven guard statues' },
-  { id: 'dwarf_foundry', name: 'Great Blast Furnaces & Gears (Dwarves)', x: 140, z: 240, biome: 'Dwarf Industry', desc: 'Twin industrial smelting towers with glowing molten iron and rotating cogs' },
-  { id: 'elder_lodge', name: 'Retired Hero’s Rustic Lodge', x: 130, z: 260, biome: 'Dwarf Industry', desc: 'Master Vance’s cozy thatched timber home in the peaceful foothills' },
+  { id: 'dwarf_bastion', name: 'Karak-Drak Mountain Bastion (Dwarves)', x: 200, z: 182, biome: 'Dwarf Industry', desc: 'Massive heavy stone fortress flanked by colossal dwarven guard statues' },
+  { id: 'dwarf_foundry', name: 'Great Blast Furnaces & Gears (Dwarves)', x: 140, z: 222, biome: 'Dwarf Industry', desc: 'Twin industrial smelting towers with glowing molten iron and rotating cogs' },
+  { id: 'elder_lodge', name: 'Retired Hero’s Rustic Lodge', x: 130, z: 248, biome: 'Dwarf Industry', desc: 'Master Vance’s cozy thatched timber home in the peaceful foothills' },
   { id: 'oakhaven_village', name: 'Oakhaven Agricultural Village (Farmlands)', x: 105, z: 10, biome: 'Human Kingdom', desc: 'Bustling farming settlement with golden wheat fields, pumpkin patches, granary, and communal hearth' },
   { id: 'fernbrook_hamlet', name: 'Fernbrook Woodland Orchard & Hamlet', x: -75, z: 110, biome: 'Elven Forest', desc: 'Rustic riverside orchard hamlet with herbal garden beds, skep beehives, and log cabins' },
   { id: 'demon_enclave', name: 'Krag’mar Demon Enclave', x: -120, z: -90, biome: 'Demon Territory', desc: 'Smoldering nether outpost with bone-spire keep, horned huts, boiling sulfur cauldron, and living demons' },
-  { id: 'elven_glade', name: 'Sylvaheim Elven Glade', x: -160, z: 90, biome: 'Elven Forest', desc: 'Serene woodland sanctuary with living jade tree pavilions, luminous starlight mana pool, and elven singers' },
+  { id: 'elven_glade', name: 'Sylvaheim Elven Glade', x: -160, z: 78, biome: 'Elven Forest', desc: 'Serene woodland sanctuary with living jade tree pavilions, luminous starlight mana pool, and elven singers' },
   { id: 'dwarf_clanstead', name: 'Karak-Vorn United Clanstead', x: 105, z: 140, biome: 'Dwarf Industry', desc: 'Fortified mountain settlement where the dwarven clans live and work united with mead halls, clan forge, and the Unity Monument' }
 ];
 
@@ -42,6 +43,8 @@ export const SANCTUARY_ZONES = [
   { id: 'market', name: 'Valoria Market Bazaar & Tavern', x: 205, z: -85, radius: 72 },
   // 2. Human King's Royal Castle Citadel & Courtyards
   { id: 'royal_citadel', name: 'Royal Castle & Citadel', x: 380, z: -380, radius: 95 },
+  // High Valoria Royal Castle Town & Grand Promenade
+  { id: 'high_valoria_town', name: 'High Valoria Castle Town', x: 370, z: -250, radius: 82 },
   // 3. Princess Aurelia's Royal Pavilion & Gardens
   { id: 'princess_pavilion', name: 'Princess Aurelia’s Sun Pavilion', x: 470, z: -370, radius: 52 },
   // 4. Oakhaven Agricultural Village & Farmlands

@@ -955,6 +955,11 @@ export class MonsterManager {
       this.releaseTamedMonster();
     }
 
+    // Also release any tamed flying dragon if active
+    if (this.gameApp?.mythicalDragonSystem) {
+      this.gameApp.mythicalDragonSystem.releaseTamedDragon();
+    }
+
     // Set as active tamed monster
     monster.isTamed = true;
     monster.state = 'tamed';
@@ -1030,7 +1035,8 @@ export class MonsterManager {
     if (!this.tamedMonster) return null;
     const m = this.tamedMonster;
     let icon = '🐾';
-    if (m.type === 'wolf') icon = '🐺';
+    if (m.isMythicalDragon) icon = '🐲';
+    else if (m.type === 'wolf') icon = '🐺';
     else if (m.type === 'bear') icon = '🐻';
     else if (m.type === 'boar') icon = '🐗';
     else if (m.type === 'spider') icon = '🕷️';
@@ -1053,6 +1059,38 @@ export class MonsterManager {
     };
   }
 
+  exportCompanionState() {
+    if (!this.tamedMonster || this.tamedMonster.isDead) return null;
+    return {
+      type: this.tamedMonster.type,
+      name: this.tamedMonster.name,
+      level: this.tamedMonster.level,
+      maxHp: this.tamedMonster.maxHp,
+      currentHp: this.tamedMonster.currentHp,
+      attack: this.tamedMonster.attack,
+      isMythicalDragon: !!this.tamedMonster.isMythicalDragon
+    };
+  }
+
+  restoreCompanion(data, playerPos) {
+    if (!data || !data.type) return;
+    let candidate = this.monsters.find(m => m.type === data.type && !m.isDead && !m.isTamed);
+    if (!candidate) {
+      candidate = this.monsters.find(m => m.type === data.type);
+    }
+    if (candidate) {
+      candidate.isDead = false;
+      candidate.level = data.level || candidate.level;
+      candidate.maxHp = data.maxHp || candidate.maxHp;
+      candidate.currentHp = data.currentHp || candidate.maxHp;
+      candidate.attack = data.attack || candidate.attack;
+      if (playerPos) {
+        candidate.group.position.set(playerPos.x + 2.0, playerPos.y || 0.5, playerPos.z + 2.0);
+      }
+      this.tameMonster(candidate);
+    }
+  }
+
   getNearbyTamableMonster(playerPos) {
     if (!playerPos) return null;
 
@@ -1062,7 +1100,8 @@ export class MonsterManager {
     for (const m of this.monsters) {
       if (m.isDead || m.isTamed) continue;
       const d = Math.hypot(m.group.position.x - playerPos.x, m.group.position.z - playerPos.z);
-      if (d < minDist) {
+      const threshold = m.isMythicalDragon ? 8.5 : 5.0;
+      if (d < threshold && d < minDist) {
         minDist = d;
         closest = m;
       }
@@ -1070,6 +1109,58 @@ export class MonsterManager {
 
     this.nearbyTamableMonster = closest;
     return closest;
+  }
+
+  /**
+   * Spawns a custom monster dynamically (used by God Mode Spawner).
+   * Can spawn as hostile wild beast or immediately as a loyal tamed companion!
+   */
+  spawnCustomMonster(type, x, z, asTamed = false, customLevel = 5) {
+    const names = {
+      wolf: 'Dire Shadow Wolf',
+      treant: 'Elder Ancient Treant',
+      golem: 'Rune Obsidian Golem',
+      drake: 'Fire Drake of the Wastes',
+      automaton: 'Dwarven Steam Automaton',
+      boar: 'Armored Forest Boar',
+      wyvern: 'Sky Apex Wyvern',
+      skeleton: 'Cursed Skeleton Knight',
+      imp: 'Nether Imp Pyromancer',
+      goblin: 'Goblin Berserker',
+      bear: 'Highland Grizzly Bear',
+      spider: 'Gloom Cavern Spider'
+    };
+
+    const maxHp = 70 + customLevel * 40;
+    const attack = 18 + customLevel * 6;
+    const cfg = {
+      type: type || 'wolf',
+      name: names[type] || 'Summoned Beast',
+      x: x,
+      z: z,
+      level: customLevel,
+      maxHp: maxHp,
+      attack: attack,
+      xpValue: 45 + customLevel * 20,
+      radius: 1.4
+    };
+
+    const monster = this.createMonster(cfg, 'summon_' + Date.now() + '_' + Math.floor(Math.random() * 1000));
+    this.monsters.push(monster);
+
+    if (asTamed) {
+      this.tameMonster(monster);
+    }
+
+    if (this.combatSystem) {
+      this.combatSystem.spawnFloatingText(
+        monster.group.position,
+        `✨ Summoned ${cfg.name} (Lv. ${customLevel})!`,
+        asTamed ? '#38bdf8' : '#ef4444'
+      );
+    }
+
+    return monster;
   }
 
   // -------------------------------------------------------------
@@ -1259,7 +1350,11 @@ export class MonsterManager {
       }
     }
 
-    // 2. Update Hostile Monsters AI & Behaviors
+    // 2. Update Hostile Monsters AI & Behaviors (Distance-Culled LOD)
+    const playerInSanctuary = playerPos ? isInSanctuaryZone(playerPos.x, playerPos.z, 2.0) : null;
+    const px = playerPos ? playerPos.x : 0;
+    const pz = playerPos ? playerPos.z : 0;
+
     this.monsters.forEach(m => {
       if (m.isDead) {
         m.respawnTimer -= delta;
@@ -1276,21 +1371,45 @@ export class MonsterManager {
       }
 
       if (m.isTamed) return; // Handled in tamed loop above!
+      if (m.isMythicalDragon) return; // Handled by MythicalDragonSystem flight & raid physics!
 
-      // Distance checks
-      const playerInSanctuary = playerPos ? isInSanctuaryZone(playerPos.x, playerPos.z, 2.0) : null;
-      const distToPlayer = (playerPos && !playerInSanctuary) ? Math.hypot(playerPos.x - m.group.position.x, playerPos.z - m.group.position.z) : 999;
+      // Fast broadphase distance check to player
+      const dX = px - m.group.position.x;
+      const dZ = pz - m.group.position.z;
+      const distToPlayerSq = dX * dX + dZ * dZ;
+
+      // If monster is very far (> 140m), sleep or run low-frequency update
+      if (distToPlayerSq > 19600) { // 140m^2
+        m.wanderTimer -= delta;
+        if (m.wanderTimer <= 0) {
+          m.wanderTimer = 4 + Math.random() * 6;
+          // Simple stationary or spawn return
+          m.group.position.x = m.spawnPos.x;
+          m.group.position.z = m.spawnPos.z;
+        }
+        return;
+      }
+
+      const distToPlayer = (playerPos && !playerInSanctuary) ? Math.sqrt(distToPlayerSq) : 999;
 
       let targetGuardian = null;
       let minGuardDist = 14.0;
-      this.guardians.forEach(g => {
-        if (isInSanctuaryZone(g.group.position.x, g.group.position.z, 2.0)) return;
-        const d = Math.hypot(g.group.position.x - m.group.position.x, g.group.position.z - m.group.position.z);
-        if (d < minGuardDist) {
-          minGuardDist = d;
-          targetGuardian = g;
+
+      // Only check guardians if monster is in Elven Forest (where guardians reside)
+      if (m.group.position.x < 0 && m.group.position.z > 0 && this.guardians.length > 0) {
+        for (let gi = 0; gi < this.guardians.length; gi++) {
+          const g = this.guardians[gi];
+          const gdx = g.group.position.x - m.group.position.x;
+          const gdz = g.group.position.z - m.group.position.z;
+          if (Math.abs(gdx) > 15 || Math.abs(gdz) > 15) continue;
+          if (isInSanctuaryZone(g.group.position.x, g.group.position.z, 2.0)) continue;
+          const d = Math.hypot(gdx, gdz);
+          if (d < minGuardDist) {
+            minGuardDist = d;
+            targetGuardian = g;
+          }
         }
-      });
+      }
 
       let targetEntity = null;
       let targetDist = 999;
@@ -1339,7 +1458,13 @@ export class MonsterManager {
               targetEntity.guardian.updateHpBar(targetEntity.guardian.currentHp, targetEntity.guardian.maxHp, targetEntity.guardian.level);
               this.combatSystem.spawnFloatingText(targetEntity.guardian.group.position, `-${dmg}`, '#f87171');
             } else {
-              this.combatSystem.spawnFloatingText(playerPos, `-${m.attack}`, '#ef4444');
+              let dmg = m.attack;
+              if (this.gameApp && this.gameApp.player) {
+                dmg = this.gameApp.player.takeDamage(m.attack);
+              }
+              if (dmg > 0) {
+                this.combatSystem.spawnFloatingText(playerPos, `-${dmg}`, '#ef4444');
+              }
             }
           }
         }
@@ -1349,7 +1474,7 @@ export class MonsterManager {
         if (m.wanderTimer <= 0) {
           m.wanderTimer = 3 + Math.random() * 5;
           let candidateTarget = null;
-          for (let attempt = 0; attempt < 6; attempt++) {
+          for (let attempt = 0; attempt < 4; attempt++) {
             const rx = m.spawnPos.x + (Math.random() - 0.5) * 22;
             const rz = m.spawnPos.z + (Math.random() - 0.5) * 22;
             if (!isInSanctuaryZone(rx, rz, 3.0)) {
@@ -1405,8 +1530,8 @@ export class MonsterManager {
         }
       }
 
-      // Wolf leg swing animation
-      if (m.type === 'wolf' && m.modelParts.legs) {
+      // Wolf leg swing animation (only when within view)
+      if (m.type === 'wolf' && m.modelParts.legs && distToPlayerSq < 4900) { // < 70m
         const legSwing = Math.sin(time * 8) * 0.4;
         m.modelParts.legs[0].rotation.x = legSwing;
         m.modelParts.legs[1].rotation.x = -legSwing;
@@ -1415,58 +1540,64 @@ export class MonsterManager {
       }
     });
 
-    // 3. Update Forest Guardians
-    this.guardians.forEach(g => {
-      let nearestMonster = null;
-      let minMDist = 14.0;
+    // 3. Update Forest Guardians (only when player is in or near Elven Forest)
+    if (px < 100 && pz > -50 && this.guardians.length > 0) {
+      this.guardians.forEach(g => {
+        let nearestMonster = null;
+        let minMDist = 14.0;
 
-      this.monsters.forEach(m => {
-        if (m.isDead || m.isTamed) return;
-        const d = Math.hypot(m.group.position.x - g.group.position.x, m.group.position.z - g.group.position.z);
-        if (d < minMDist) {
-          minMDist = d;
-          nearestMonster = m;
+        for (let mi = 0; mi < this.monsters.length; mi++) {
+          const m = this.monsters[mi];
+          if (m.isDead || m.isTamed) continue;
+          const mdx = m.group.position.x - g.group.position.x;
+          const mdz = m.group.position.z - g.group.position.z;
+          if (Math.abs(mdx) > 15 || Math.abs(mdz) > 15) continue;
+          const d = Math.hypot(mdx, mdz);
+          if (d < minMDist) {
+            minMDist = d;
+            nearestMonster = m;
+          }
         }
-      });
 
-      if (nearestMonster) {
-        const angle = Math.atan2(nearestMonster.group.position.x - g.group.position.x, nearestMonster.group.position.z - g.group.position.z);
-        g.group.rotation.y = angle;
+        if (nearestMonster) {
+          const angle = Math.atan2(nearestMonster.group.position.x - g.group.position.x, nearestMonster.group.position.z - g.group.position.z);
+          g.group.rotation.y = angle;
 
-        if (minMDist > 3.0) {
-          g.group.position.x += Math.sin(angle) * 3.2 * delta;
-          g.group.position.z += Math.cos(angle) * 3.2 * delta;
-          g.group.position.y = getTerrainHeight(g.group.position.x, g.group.position.z);
-        } else {
-          g.attackCooldown -= delta;
-          if (g.attackCooldown <= 0) {
-            g.attackCooldown = 1.4;
+          if (minMDist > 3.0) {
+            g.group.position.x += Math.sin(angle) * 3.2 * delta;
+            g.group.position.z += Math.cos(angle) * 3.2 * delta;
+            g.group.position.y = getTerrainHeight(g.group.position.x, g.group.position.z);
+          } else {
+            g.attackCooldown -= delta;
+            if (g.attackCooldown <= 0) {
+              g.attackCooldown = 1.4;
 
-            const dmg = Math.floor(g.attack * (0.85 + Math.random() * 0.3));
-            nearestMonster.currentHp -= dmg;
-            nearestMonster.updateHpBar(nearestMonster.currentHp, nearestMonster.maxHp, nearestMonster.level);
+              const dmg = Math.floor(g.attack * (0.85 + Math.random() * 0.3));
+              nearestMonster.currentHp -= dmg;
+              nearestMonster.updateHpBar(nearestMonster.currentHp, nearestMonster.maxHp, nearestMonster.level);
 
-            this.combatSystem.spawnFloatingText(nearestMonster.group.position, `-${dmg}`, '#34d399');
+              this.combatSystem.spawnFloatingText(nearestMonster.group.position, `-${dmg}`, '#34d399');
 
-            if (nearestMonster.currentHp <= 0) {
-              this.killMonster(nearestMonster, g.name);
-              g.xp += nearestMonster.xpValue;
+              if (nearestMonster.currentHp <= 0) {
+                this.killMonster(nearestMonster, g.name);
+                g.xp += nearestMonster.xpValue;
 
-              if (g.xp >= g.xpToNext) {
-                g.xp -= g.xpToNext;
-                g.level++;
-                g.xpToNext = Math.floor(g.xpToNext * 1.6);
-                g.maxHp = Math.floor(g.maxHp * 1.35);
-                g.currentHp = g.maxHp;
-                g.attack = Math.floor(g.attack * 1.35);
+                if (g.xp >= g.xpToNext) {
+                  g.xp -= g.xpToNext;
+                  g.level++;
+                  g.xpToNext = Math.floor(g.xpToNext * 1.6);
+                  g.maxHp = Math.floor(g.maxHp * 1.35);
+                  g.currentHp = g.maxHp;
+                  g.attack = Math.floor(g.attack * 1.35);
 
-                g.updateHpBar(g.currentHp, g.maxHp, g.level);
-                this.combatSystem.triggerLevelUp(g.group, g.name, g.level);
+                  g.updateHpBar(g.currentHp, g.maxHp, g.level);
+                  this.combatSystem.triggerLevelUp(g.group, g.name, g.level);
+                }
               }
             }
           }
         }
-      }
-    });
+      });
+    }
   }
 }

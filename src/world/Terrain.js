@@ -194,8 +194,7 @@ export class Terrain {
 
     const material = new THREE.MeshLambertMaterial({
       vertexColors: true,
-      flatShading: true,
-      roughness: 0.9,
+      flatShading: true
     });
 
     this.mesh = new THREE.Mesh(geometry, material);
